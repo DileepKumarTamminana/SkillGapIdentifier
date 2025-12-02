@@ -1,8 +1,16 @@
-Status: Succeeded
-Test Event Name: requestSkillTest
-
-Response:
 {
-  "statusCode": 500,
-  "body": "{\"message\": \"Internal Server Error\", \"error\": \"An error occurred (AccessDeniedException) when calling the PutItem operation: User: arn:aws:sts::682470314362:assumed-role/requestSkill-role-k5a3o0fw/requestSkill is not authorized to perform: dynamodb:PutItem on resource: arn:aws:dynamodb:us-east-1:682470314362:table/SkillRequests because no identity-based policy allows the dynamodb:PutItem action\"}"
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "dynamodb:PutItem",
+        "dynamodb:UpdateItem",
+        "dynamodb:GetItem",
+        "dynamodb:Query",
+        "dynamodb:Scan"
+      ],
+      "Resource": "arn:aws:dynamodb:us-east-1:682470314362:table/SkillRequests"
+    }
+  ]
 }
