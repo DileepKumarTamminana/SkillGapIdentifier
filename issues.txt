@@ -107,3 +107,55 @@ END RequestId: a34ff188-9d4c-46a9-bd1f-087372adac8b
 REPORT RequestId: a34ff188-9d4c-46a9-bd1f-087372adac8b	Duration: 115.36 ms	Billed Duration: 116 ms	Memory Size: 128 MB	Max Memory Used: 47 MB	Status: error	Error Type: Runtime.UserCodeSyntaxError
 
 Request ID: a34ff188-9d4c-46a9-bd1f-087372adac8b
+---------------------
+import json
+import boto3
+from datetime import datetime
+import uuid
+
+dynamodb = boto3.resource('dynamodb')
+table = dynamodb.Table('SkillRequests')
+
+def lambda_handler(event, context):
+    try:
+        body = event.get("body")
+        if isinstance(body, str):
+            body = json.loads(body)
+
+        employeeId = body.get("employeeId")
+        skillName = body.get("skillName")
+        certificationName = body.get("certificationName")
+        expiryDate = body.get("expiryDate")
+
+        if not employeeId or not skillName:
+            return {
+                "statusCode": 400,
+                "body": json.dumps({"message": "employeeId and skillName are required"})
+            }
+
+        requestId = str(uuid.uuid4())
+        timestamp = datetime.utcnow().isoformat()
+
+        item = {
+            "requestId": requestId,
+            "employeeId": employeeId,
+            "skillName": skillName,
+            "certificationName": certificationName if certificationName else "",
+            "expiryDate": expiryDate if expiryDate else "",
+            "status": "PENDING",
+            "requestedAt": timestamp
+        }
+
+        table.put_item(Item=item)
+
+        return {
+            "statusCode": 200,
+            "body": json.dumps({"message": "Request submitted successfully", "requestId": requestId})
+        }
+
+    except Exception as e:
+        return {
+            "statusCode": 500,
+            "body": json.dumps({"message": "Internal Server Error", "error": str(e)})
+        }
+========================================
