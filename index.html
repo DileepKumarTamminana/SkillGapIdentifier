@@ -840,6 +840,7 @@ async function checkSkillGap() {
 /* ================== HISTORY ================== */
 async function loadHistory() {
     const employeeId = document.getElementById("employeeId").value;
+    const roleId = document.getElementById("roleId").value;
     const box = document.getElementById("historyOutput");
 
     if (!employeeId) {
@@ -850,7 +851,15 @@ async function loadHistory() {
     box.innerHTML = `<div class="loader"></div><p style="text-align:center;">Loading history...</p>`;
 
     try {
-        const res = await fetch(`${API_BASE}/history/${employeeId}`);
+        const res = await fetch(`${API_BASE}/history`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                employeeId,
+                roleId: roleId || null
+            })
+        });
+
         const data = await res.json();
 
         if (!Array.isArray(data) || !data.length) {
@@ -862,26 +871,50 @@ async function loadHistory() {
             <div class="entry">
                 <strong>Role:</strong> ${h.roleId}<br>
                 <strong>Match:</strong> ${h.matchPercent || 0}%<br>
+                <strong>Missing:</strong> ${(h.missingSkills || []).join(", ") || "None"}<br>
                 <small>${h.timestamp}</small>
             </div>
         `).join("");
+
     } catch (err) {
         console.error(err);
         box.innerHTML = `<p style="color:red;">Error loading history.</p>`;
     }
 }
 
+
 /* ================== REQUEST SKILL ================== */
 async function requestSkill() {
     const empId = document.getElementById("skillReqEmployee").value;
     const skill = document.getElementById("reqSkillName").value.trim();
     const cert = document.getElementById("reqCertName").value.trim();
-    const expiry = document.getElementById("reqExpiryDate").value.trim();
+    let expiry = document.getElementById("reqExpiryDate").value.trim();
     const box = document.getElementById("skillReqResult");
 
     if (!empId || !skill) {
         box.innerHTML = `<p style="color:red;">Employee & Skill Name are required.</p>`;
         return;
+    }
+
+    // 🛑 Handle expiry date safely
+    if (expiry) {
+        // Case 1: User typed DD-MM-YYYY (like 10-12-2025)
+        const ddmmyyyy = /^(\d{2})-(\d{2})-(\d{4})$/;
+        // Case 2: Correct YYYY-MM-DD from date picker
+        const yyyymmdd = /^\d{4}-\d{2}-\d{2}$/;
+
+        if (ddmmyyyy.test(expiry)) {
+            // Convert from DD-MM-YYYY to YYYY-MM-DD
+            const m = expiry.match(ddmmyyyy);
+            const day = m[1];
+            const month = m[2];
+            const year = m[3];
+            expiry = `${year}-${month}-${day}`;
+        } else if (!yyyymmdd.test(expiry)) {
+            // If not matching either pattern, show error
+            box.innerHTML = `<p style="color:red;">Enter expiry date in YYYY-MM-DD format or use the calendar picker.</p>`;
+            return;
+        }
     }
 
     box.innerHTML = `<div class="loader"></div><p style="text-align:center;">Submitting request...</p>`;
@@ -894,7 +927,7 @@ async function requestSkill() {
                 employeeId: empId,
                 skillName: skill,
                 certificationName: cert,
-                expiryDate: expiry
+                expiryDate: expiry || null
             })
         });
         const data = await res.json();
@@ -909,6 +942,7 @@ async function requestSkill() {
         box.innerHTML = `<p style="color:red;">Error calling API.</p>`;
     }
 }
+
 
 /* ================== PENDING REQUESTS ================== */
 async function loadPendingRequests() {

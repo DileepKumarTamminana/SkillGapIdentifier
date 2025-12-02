@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AI Skill Gap & Learning Management Portal</title>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<!-- html2pdf.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.3/html2pdf.bundle.min.js"></script>
+
+<!-- Choices.js (Searchable dropdowns) -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css" />
+<script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
+
+<style>
+
+/* ---------- LIGHT THEME VARIABLES ---------- */
+:root {
+    --bg: #f4f5f9;
+    --header-bg: linear-gradient(135deg, #0048ff, #0099ff);
+    --header-text: #ffffff;
+
+    --nav-bg: #ffffff;
+    --nav-btn-bg: #e7e9f0;
+    --nav-btn-active: #006aff;
+    --nav-btn-active-text: #ffffff;
+
+    --card-bg: #ffffff;
+    --card-border: #ddd;
+
+    --text: #000000;
+    --subtext: #444;
+
+    --button-bg: #006aff;
+    --button-hover: #004fcc;
+
+    --progress-bg: #e5e7eb;
+    --progress-text: #000000;
+    --progress-fill-gradient: linear-gradient(90deg, #00c853, #00e676);
+}
+
+/* ---------- DARK THEME VARIABLES ---------- */
+.dark-mode {
+    --bg: #181a1e;
+    --header-bg: linear-gradient(135deg, #002a80, #0048cc);
+    --header-text: #ffffff;
+
+    --nav-bg: #1f2125;
+    --nav-btn-bg: #2a2d33;
+    --nav-btn-active: #006aff;
+    --nav-btn-active-text: #ffffff;
+
+    --card-bg: #24262b;
+    --card-border: #3a3d42;
+
+    --text: #e5e5e5;
+    --subtext: #bbbbbb;
+
+    --button-bg: #007bff;
+    --button-hover: #005fcc;
+
+    --progress-bg: #2f3237;
+    --progress-text: #ffffff;
+    --progress-fill-gradient: linear-gradient(90deg, #29b6f6, #00e5ff);
+}
+
+/* ---------- GLOBAL ---------- */
+body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Segoe UI", Arial, sans-serif;
+    transition: background 0.3s ease, color 0.3s ease;
+}
+
+/* HEADER */
+.header {
+    background: var(--header-bg);
+    padding: 16px 20px;
+    color: var(--header-text);
+    font-size: 20px;
+    font-weight: 600;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.theme-toggle,
+.nav-toggle {
+    position: absolute;
+    top: 10px;
+    background: transparent;
+    border: none;
+    color: var(--header-text);
+    font-size: 20px;
+    cursor: pointer;
+}
+.theme-toggle { right: 20px; }
+.nav-toggle { left: 20px; }
+
+/* LAYOUT */
+.container {
+    display: flex;
+    height: calc(100vh - 60px);
+}
+
+/* SIDE NAV */
+.nav {
+    width: 250px;
+    background: var(--nav-bg);
+    padding: 20px 10px;
+    box-shadow: 2px 0 6px rgba(0,0,0,0.08);
+    transition: width 0.3s ease;
+}
+.nav.collapsed {
+    width: 70px;
+}
+.nav button {
+    width: 100%;
+    padding: 12px;
+    background: var(--nav-btn-bg);
+    border: none;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.nav button.active {
+    background: var(--nav-btn-active);
+    color: var(--nav-btn-active-text);
+}
+.nav button .label {
+    transition: opacity 0.2s;
+}
+.nav.collapsed .label {
+    opacity: 0;
+}
+
+/* CONTENT */
+.content {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+}
+
+/* CARD */
+.card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+.card h3 {
+    margin: 0 0 12px 0;
+}
+
+/* BUTTONS */
+.primary-btn {
+    width: 100%;
+    padding: 10px;
+    background: var(--button-bg);
+    border: none;
+    color: white;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+}
+.primary-btn:hover {
+    background: var(--button-hover);
+}
+.secondary-btn {
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: none;
+    margin-left: 8px;
+    cursor: pointer;
+}
+
+/* INPUTS */
+input, select {
+    width: 100%;
+    padding: 9px;
+    border-radius: 8px;
+    border: 1px solid var(--card-border);
+    margin-top: 4px;
+    background: var(--card-bg);
+    color: var(--text);
+}
+
+/* DARK MODE INPUTS */
+.dark-mode input,
+.dark-mode select {
+    background: #2f3237;
+    border-color: #4a4d52;
+    color: #ffffff;
+}
+
+/* SEARCHABLE DROPDOWNS (Choices.js Fixes) */
+.choices__inner {
+    background: var(--card-bg) !important;
+    border: 1px solid var(--card-border) !important;
+    border-radius: 8px !important;
+    min-height: 44px !important;
+    padding: 8px !important;
+}
+.dark-mode .choices__inner {
+    background: #2f3237 !important;
+    border-color: #4a4d52 !important;
+    color: white !important;
+}
+.choices__list--dropdown {
+    background: var(--card-bg) !important;
+}
+.dark-mode .choices__list--dropdown {
+    background: #2f3237 !important;
+}
+
+/* PROGRESS BAR */
+.progress-bar-container {
+    background: var(--progress-bg);
+    border-radius: 999px;
+    overflow: hidden;
+    height: 18px;
+    position: relative;
+    margin-top: 10px;
+}
+.progress-bar-fill {
+    height: 100%;
+    width: 0;
+    background: var(--progress-fill-gradient);
+    transition: width 1s ease;
+    position: relative;
+}
+.progress-bar-fill::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -40%;
+    width: 40%;
+    height: 100%;
+    background: linear-gradient(
+        120deg,
+        rgba(255,255,255,0),
+        rgba(255,255,255,0.5),
+        rgba(255,255,255,0)
+    );
+    animation: shine 1.8s infinite;
+}
+@keyframes shine {
+    0% { left: -40%; }
+    100% { left: 100%; }
+}
+.progress-text {
+    position: absolute;
+    width: 100%;
+    text-align: center;
+    color: var(--progress-text);
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 12px;
+    font-weight: 700;
+}
+
+/* HIDDEN */
+.hidden { display: none; }
+
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+    <button class="nav-toggle" onclick="toggleNav()">☰</button>
+    AI Skill Gap & Learning Management Portal
+    <button class="theme-toggle" onclick="toggleTheme()">🌓</button>
+</div>
+
+<div class="container">
+    <!-- SIDE NAV -->
+    <div class="nav" id="sideNav">
+        <button class="active" onclick="switchView('employee')"><span class="label">👤 Employee View</span></button>
+        <button onclick="switchView('manager')"><span class="label">🧑‍💼 Manager View</span></button>
+    </div>
+
+    <!-- CONTENT -->
+    <div class="content">
+
+<!---------------- EMPLOYEE VIEW ---------------->
+<div id="employeeView">
+
+    <!-- 1. Employee Selection -->
+    <div class="card">
+        <h3>1. Employee & Role Selection</h3>
+
+        <label>Select Employee</label>
+        <select id="employeeId"><option>Loading...</option></select>
+
+        <label>Select Target Role</label>
+        <select id="roleId"><option>Loading...</option></select>
+
+        <button class="primary-btn" onclick="checkSkillGap()">Analyze Skill Gap</button>
+        <div id="employeeProfile" style="margin-top:15px;"></div>
+    </div>
+
+    <!-- 2. Skill Gap -->
+    <div class="card">
+        <h3>2. Skill Gap Analysis</h3>
+        <div id="skillGapOutput"></div>
+
+        <button class="primary-btn" onclick="exportCSV()">Export CSV</button>
+        <button class="secondary-btn" onclick="exportPDF()">Export PDF</button>
+
+        <h4 style="margin-top:15px;">Skill Distribution</h4>
+        <canvas id="skillChart" height="150"></canvas>
+    </div>
+
+    <!-- 3. History -->
+    <div class="card">
+        <h3>3. Skill Gap History</h3>
+        <button class="primary-btn" onclick="loadHistory()">View History</button>
+        <div id="historyOutput" style="margin-top:15px;"></div>
+    </div>
+
+    <!-- 4. Request Learned Skill -->
+    <div class="card">
+        <h3>4. Request Addition of Learned Skill</h3>
+
+        <label>Select Employee</label>
+        <select id="skillReqEmployee"></select>
+
+        <label>Skill Name</label>
+        <input id="reqSkillName" />
+
+        <label>Certification Name</label>
+        <input id="reqCertName" />
+
+        <label>Certification Expiry</label>
+        <input id="reqExpiryDate" type="date" />
+
+        <button class="primary-btn" onclick="requestSkill()">Submit Request</button>
+        <div id="skillReqResult" style="margin-top:15px;"></div>
+    </div>
+
+</div>
+
+
+<!---------------- MANAGER VIEW ---------------->
+<div id="managerView" class="hidden">
+
+    <!-- Pending Requests -->
+    <div class="card">
+        <h3>1. Pending Skill Requests</h3>
+        <button class="primary-btn" onclick="loadPendingRequests()">Refresh</button>
+        <div id="pendingRequestsBox" style="margin-top:15px;"></div>
+    </div>
+
+    <!-- Expiring Certifications -->
+    <div class="card">
+        <h3>2. Expiring Certifications</h3>
+        <button class="primary-btn" onclick="loadExpiringSkills()">Load</button>
+        <div id="expiringSkillsBox" style="margin-top:15px;"></div>
+
+        <h4 style="margin-top:15px;">Expiry by Month</h4>
+        <canvas id="expiryChart" height="150"></canvas>
+    </div>
+
+    <!-- Assign Learning -->
+    <div class="card">
+        <h3>3. Assign Learning to Team</h3>
+
+        <label>Select Employee</label>
+        <select id="assignEmployee"></select>
+
+        <label>Skill Name</label>
+        <input id="assignSkillName" />
+
+        <label>Course Name</label>
+        <input id="assignCourseName" />
+
+        <label>Due Date</label>
+        <input id="assignDueDate" type="date" />
+
+        <button class="primary-btn" onclick="assignLearning()">Assign</button>
+        <div id="assignResultBox" style="margin-top:15px;"></div>
+    </div>
+
+</div>
+
+    </div>
+</div>
+
+
+<!---------------- JAVASCRIPT ---------------->
+<script>
+
+const API_BASE = "https://dx87uzkcm2.execute-api.us-east-1.amazonaws.com";
+
+let employeesList = [];
+let lastSkillGapResult = null;
+let skillChart = null;
+let expiryChart = null;
+
+// Prevent past dates
+function blockPastDates() {
+    const today = new Date().toISOString().split("T")[0];
+    document.querySelectorAll('input[type="date"]').forEach(input => {
+        input.setAttribute("min", today);
+    });
+}
+window.addEventListener("load", blockPastDates);
+
+// THEME
+function toggleTheme() {
+    document.body.classList.toggle("dark-mode");
+    localStorage.setItem("theme", document.body.classList.contains("dark-mode") ? "dark" : "light");
+}
+if (localStorage.getItem("theme") === "dark") {
+    document.body.classList.add("dark-mode");
+}
+
+// SIDENAV
+function toggleNav() {
+    document.getElementById("sideNav").classList.toggle("collapsed");
+}
+
+// VIEW SWITCH
+function switchView(v) {
+    document.getElementById("employeeView").classList.toggle("hidden", v !== "employee");
+    document.getElementById("managerView").classList.toggle("hidden", v !== "manager");
+
+    const navBtns = document.querySelectorAll(".nav button");
+    navBtns.forEach(btn => btn.classList.remove("active"));
+    navBtns[v === "employee" ? 0 : 1].classList.add("active");
+}
+
+// LOAD EMPLOYEES + SEARCH DROPDOWN
+let empChoices, reqChoices, assignChoices;
+
+async function loadEmployees() {
+    let res = await fetch(`${API_BASE}/employees`);
+    employeesList = await res.json();
+
+    const empSel = document.getElementById("employeeId");
+    const reqSel = document.getElementById("skillReqEmployee");
+    const assignSel = document.getElementById("assignEmployee");
+
+    empSel.innerHTML = "";
+    reqSel.innerHTML = "";
+    assignSel.innerHTML = "";
+
+    empSel.appendChild(new Option("-- Select Employee --", ""));
+    reqSel.appendChild(new Option("-- Select Employee --", ""));
+    assignSel.appendChild(new Option("-- Select Employee --", ""));
+
+    employeesList.forEach(emp => {
+        let text = `${emp.employeeId} - ${emp.name}`;
+        empSel.appendChild(new Option(text, emp.employeeId));
+        reqSel.appendChild(new Option(text, emp.employeeId));
+        assignSel.appendChild(new Option(text, emp.employeeId));
+    });
+
+    if (empChoices) empChoices.destroy();
+    if (reqChoices) reqChoices.destroy();
+    if (assignChoices) assignChoices.destroy();
+
+    empChoices = new Choices('#employeeId', { searchEnabled: true, shouldSort: false });
+    reqChoices = new Choices('#skillReqEmployee', { searchEnabled: true, shouldSort: false });
+    assignChoices = new Choices('#assignEmployee', { searchEnabled: true, shouldSort: false });
+}
+
+// LOAD ROLES
+async function loadRoles() {
+    const sel = document.getElementById("roleId");
+    let res = await fetch(`${API_BASE}/roles`);
+    let roles = await res.json();
+
+    sel.innerHTML = "<option value=''>-- Select Role --</option>";
+    roles.forEach(r => sel.appendChild(new Option(`${r.roleId} - ${r.roleName}`, r.roleId)));
+}
+
+// SHOW PROFILE
+function showEmployeeProfile() {
+    const empId = document.getElementById("employeeId").value;
+    const box = document.getElementById("employeeProfile");
+
+    if (!empId) {
+        box.innerHTML = "Select employee";
+        return;
+    }
+
+    let emp = employeesList.find(e => e.employeeId === empId);
+
+    box.innerHTML = `
+        <strong>Name:</strong> ${emp.name}<br>
+        <strong>Role:</strong> ${emp.currentRole}<br>
+        <strong>Skills:</strong> ${(emp.skills || []).join(", ")}<br>
+    `;
+
+    renderSkillChart(emp);
+}
+
+// CHART
+function renderSkillChart(emp) {
+    if (!emp.skills) return;
+
+    let ctx = document.getElementById("skillChart").getContext("2d");
+    if (skillChart) skillChart.destroy();
+
+    skillChart = new Chart(ctx, {
+        type: "bar",
+        data: {
+            labels: emp.skills,
+            datasets: [{
+                label: "Skills",
+                data: emp.skills.map(() => 1)
+            }]
+        },
+        options: { responsive: true, plugins: { legend: { display: false }}}
+    });
+}
+
+// SKILL GAP
+async function checkSkillGap() {
+    const employeeId = document.getElementById("employeeId").value;
+    const roleId = document.getElementById("roleId").value;
+    const out = document.getElementById("skillGapOutput");
+
+    if (!employeeId || !roleId) {
+        out.innerHTML = "<p style='color:red'>Select employee and role</p>";
+        return;
+    }
+
+    out.innerHTML = "<div class='loader'></div>";
+
+    let res = await fetch(`${API_BASE}/skill-gap`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ employeeId, roleId })
+    });
+
+    let data = await res.json();
+
+    let matched = data.matchedSkills || [];
+    let missing = data.missingSkills || [];
+    let percent = data.matchPercent || 0;
+    let today = new Date().toISOString().slice(0,10);
+
+    lastSkillGapResult = {
+        employeeId,
+        employeeName: data.employeeName,
+        roleName: data.roleName,
+        matched,
+        missing,
+        percent,
+        reportDate: today
+    };
+
+    out.innerHTML = `
+        <p><strong>Employee:</strong> ${data.employeeName}</p>
+        <p><strong>Role:</strong> ${data.roleName}</p>
+        <p><strong>Date:</strong> ${today}</p>
+
+        <div class="progress-bar-container">
+            <div class="progress-bar-fill" id="gapProgressFill">
+                <span class="progress-text" id="gapProgressText">0%</span>
+            </div>
+        </div>
+
+        <br><strong>Matched:</strong> ${matched.join(", ") || "None"}
+        <br><br><strong>Missing:</strong> ${missing.join(", ") || "None"}
+    `;
+
+    setTimeout(() => {
+        document.getElementById("gapProgressFill").style.width = percent + "%";
+        document.getElementById("gapProgressText").textContent = percent + "%";
+    }, 150);
+}
+
+// EXPORT CSV
+function exportCSV() {
+    if (!lastSkillGapResult) { alert("Run skill gap first"); return; }
+
+    let rows = [
+        ["Report Date", lastSkillGapResult.reportDate],
+        ["Employee Name", lastSkillGapResult.employeeName],
+        ["Role", lastSkillGapResult.roleName],
+        ["Match %", lastSkillGapResult.percent],
+        ["Matched", lastSkillGapResult.matched.join(" | ")],
+        ["Missing", lastSkillGapResult.missing.join(" | ")]
+    ];
+
+    let csv = rows.map(r => r.join(",")).join("\n");
+    let blob = new Blob([csv], { type: "text/csv" });
+    let a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "skill_gap_report.csv";
+    a.click();
+}
+
+// EXPORT PDF
+function exportPDF() {
+    if (!lastSkillGapResult) { alert("Run skill gap first"); return; }
+
+    html2pdf().from(document.getElementById("skillGapOutput")).save("skill_gap_report.pdf");
+}
+
+// HISTORY (fixed)
+async function loadHistory() {
+    const employeeId = document.getElementById("employeeId").value;
+    const roleId = document.getElementById("roleId").value;
+    const box = document.getElementById("historyOutput");
+
+    box.innerHTML = "<div class='loader'></div>";
+
+    let res = await fetch(`${API_BASE}/history`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ employeeId, roleId: roleId || null })
+    });
+
+    let data = await res.json();
+
+    if (!Array.isArray(data) || !data.length) {
+        box.innerHTML = "No history found.";
+        return;
+    }
+
+    box.innerHTML = data.map(h => `
+        <div class="entry">
+            <strong>Role:</strong> ${h.roleId}<br>
+            <strong>Match:</strong> ${h.matchPercent}%<br>
+            <small>${h.timestamp}</small>
+        </div>
+    `).join("");
+}
+
+// REQUEST SKILL (fixed date validation)
+async function requestSkill() {
+    const empId = document.getElementById("skillReqEmployee").value;
+    const skill = document.getElementById("reqSkillName").value.trim();
+    const cert = document.getElementById("reqCertName").value.trim();
+    const expiry = document.getElementById("reqExpiryDate").value.trim();
+    const box = document.getElementById("skillReqResult");
+
+    if (expiry && !/^\d{4}-\d{2}-\d{2}$/.test(expiry)) {
+        box.innerHTML = "<p style='color:red'>Date must be YYYY-MM-DD</p>";
+        return;
+    }
+
+    let res = await fetch(`${API_BASE}/request-skill`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            employeeId: empId,
+            skillName: skill,
+            certificationName: cert,
+            expiryDate: expiry
+        })
+    });
+
+    let data = await res.json();
+
+    box.innerHTML = res.status === 200
+        ? "<p style='color:green'>Request submitted</p>"
+        : "<p style='color:red'>Error: " + data.message + "</p>";
+}
+
+// PENDING REQUESTS
+async function loadPendingRequests() {
+    let res = await fetch(`${API_BASE}/pending-requests`);
+    let data = await res.json();
+
+    let box = document.getElementById("pendingRequestsBox");
+
+    if (!data.length) {
+        box.innerHTML = "No pending requests.";
+        return;
+    }
+
+    box.innerHTML = data.map(r => `
+        <div class="entry">
+            <strong>${r.employeeId}</strong> → ${r.skillName}<br>
+            ${r.certificationName}<br>
+            Expiry: ${r.expiryDate}<br>
+            <button class='primary-btn' onclick="approveSkill('${r.requestId}','APPROVE')">Approve</button>
+            <button class='secondary-btn' onclick="approveSkill('${r.requestId}','REJECT')">Reject</button>
+        </div>
+    `).join("");
+}
+
+// APPROVE
+async function approveSkill(id, action) {
+    let res = await fetch(`${API_BASE}/approve-skill`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ requestId: id, action, managerId: "MANAGER1" })
+    });
+    loadPendingRequests();
+}
+
+// EXPIRING SKILLS
+async function loadExpiringSkills() {
+    let res = await fetch(`${API_BASE}/expiring-skills`);
+    let data = await res.json();
+
+    let box = document.getElementById("expiringSkillsBox");
+
+    if (!data.length) {
+        box.innerHTML = "No expiring certifications.";
+        return;
+    }
+
+    box.innerHTML = data.map(e => `
+        <div class='entry'>
+            ${e.employeeName}<br>
+            ${e.skill}<br>
+            Expiry: ${e.expiryDate}
+        </div>
+    `).join("");
+
+    renderExpiryChart(data);
+}
+
+// EXPIRY CHART
+function renderExpiryChart(data) {
+
+    let counts = {};
+
+    data.forEach(e => {
+        let m = e.expiryDate.slice(0,7);
+        counts[m] = (counts[m] || 0) + 1;
+    });
+
+    let ctx = document.getElementById("expiryChart").getContext("2d");
+    if (expiryChart) expiryChart.destroy();
+
+    expiryChart = new Chart(ctx, {
+        type: "line",
+        data: {
+            labels: Object.keys(counts),
+            datasets: [{
+                data: Object.values(counts),
+                tension: 0.3
+            }]
+        },
+        options: { responsive: true, plugins: { legend: { display: false } } }
+    });
+}
+
+// ASSIGN LEARNING
+async function assignLearning() {
+    const empId = document.getElementById("assignEmployee").value;
+    const skill = document.getElementById("assignSkillName").value.trim();
+    const course = document.getElementById("assignCourseName").value.trim();
+    const due = document.getElementById("assignDueDate").value.trim();
+    const box = document.getElementById("assignResultBox");
+
+    if (!empId || !skill || !course) {
+        box.innerHTML = "<p style='color:red'>Fill all fields</p>";
+        return;
+    }
+
+    let res = await fetch(`${API_BASE}/assign-learning`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            employeeId: empId,
+            skillName: skill,
+            courseName: course,
+            dueDate: due,
+            managerId: "MANAGER1"
+        })
+    });
+
+    box.innerHTML = "<p style='color:green'>Assigned successfully</p>";
+}
+
+// INITIAL LOAD
+window.onload = () => {
+    loadEmployees();
+    loadRoles();
+};
+
+</script>
+
+</body>
+</html>
