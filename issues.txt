@@ -1,3 +1,25 @@
-{
-  "body": "{\"employeeId\":\"E001\",\"skillName\":\"css3\",\"certificationName\":\"css3\",\"expiryDate\":\"2025-12-20\"}"
-}
+import json
+import boto3
+from boto3.dynamodb.conditions import Attr
+
+dynamodb = boto3.resource("dynamodb")
+table = dynamodb.Table("SkillRequests")
+
+def lambda_handler(event, context):
+    try:
+        resp = table.scan(
+            FilterExpression=Attr("status").eq("PENDING")
+        )
+        
+        items = resp.get("Items", [])
+        
+        return {
+            "statusCode": 200,
+            "body": json.dumps(items)
+        }
+
+    except Exception as e:
+        return {
+            "statusCode": 500,
+            "body": json.dumps({"message": "Internal Server Error", "error": str(e)})
+        }
