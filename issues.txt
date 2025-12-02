@@ -1,0 +1,25 @@
+Status: Failed
+Test Event Name: requestSkillTest
+
+Response:
+{
+  "errorMessage": "'NoneType' object has no attribute 'get'",
+  "errorType": "AttributeError",
+  "requestId": "4013b36b-ac44-438f-ae10-b19060e4958f",
+  "stackTrace": [
+    "  File \"/var/task/lambda_function.py\", line 12, in lambda_handler\n    employee_id = body.get(\"employeeId\")\n"
+  ]
+}
+
+The area below shows the last 4 KB of the execution log.
+
+Function Logs:
+START RequestId: 4013b36b-ac44-438f-ae10-b19060e4958f Version: $LATEST
+[ERROR] AttributeError: 'NoneType' object has no attribute 'get'
+Traceback (most recent call last):
+  File "/var/task/lambda_function.py", line 12, in lambda_handler
+    employee_id = body.get("employeeId")
+END RequestId: 4013b36b-ac44-438f-ae10-b19060e4958f
+REPORT RequestId: 4013b36b-ac44-438f-ae10-b19060e4958f	Duration: 11.46 ms	Billed Duration: 521 ms	Memory Size: 128 MB	Max Memory Used: 90 MB	Init Duration: 508.80 ms
+
+------------------------------------------------------------------
