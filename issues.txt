@@ -159,3 +159,20 @@ def lambda_handler(event, context):
             "body": json.dumps({"message": "Internal Server Error", "error": str(e)})
         }
 ========================================
+Status: Succeeded
+Test Event Name: requestSkillTest
+
+Response:
+{
+  "statusCode": 500,
+  "body": "{\"message\": \"Internal Server Error\", \"error\": \"'NoneType' object has no attribute 'get'\"}"
+}
+
+The area below shows the last 4 KB of the execution log.
+
+Function Logs:
+START RequestId: 22cd5f32-4185-4d16-8ad2-0fb477dadbaf Version: $LATEST
+END RequestId: 22cd5f32-4185-4d16-8ad2-0fb477dadbaf
+REPORT RequestId: 22cd5f32-4185-4d16-8ad2-0fb477dadbaf	Duration: 1.91 ms	Billed Duration: 581 ms	Memory Size: 128 MB	Max Memory Used: 89 MB	Init Duration: 578.56 ms
+
+Request ID: 22cd5f32-4185-4d16-8ad2-0fb477dadbaf
