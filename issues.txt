@@ -23,3 +23,53 @@ END RequestId: 4013b36b-ac44-438f-ae10-b19060e4958f
 REPORT RequestId: 4013b36b-ac44-438f-ae10-b19060e4958f	Duration: 11.46 ms	Billed Duration: 521 ms	Memory Size: 128 MB	Max Memory Used: 90 MB	Init Duration: 508.80 ms
 
 ------------------------------------------------------------------
+exports.handler = async (event) => {
+    try {
+        const AWS = require("aws-sdk");
+        const db = new AWS.DynamoDB();
+
+        const employeeId = event.employeeId;
+        const skillName = event.skillName;
+        const certName = event.certificationName || "N/A";
+        const expiryDate = event.expiryDate || "N/A";
+
+        if (!employeeId || !skillName) {
+            return {
+                statusCode: 400,
+                body: JSON.stringify({ message: "Employee & Skill are required" })
+            };
+        }
+
+        // Generate unique requestId
+        const requestId = "REQ_" + Date.now();
+
+        // Build a safe DynamoDB item (no empty strings)
+        const item = {
+            requestId: { S: requestId },
+            employeeId: { S: employeeId },
+            skillName: { S: skillName },
+            certificationName: { S: certName.trim() || "N/A" },
+            expiryDate: { S: expiryDate.trim() || "N/A" },
+            status: { S: "PENDING" },
+            requestedAt: { S: new Date().toISOString() }
+        };
+
+        await db.putItem({
+            TableName: "SkillRequests",
+            Item: item
+        }).promise();
+
+        return {
+            statusCode: 200,
+            body: JSON.stringify({ message: "Submitted", requestId })
+        };
+
+    } catch (err) {
+        console.log("ERROR:", err);
+        return {
+            statusCode: 500,
+            body: JSON.stringify({ message: "Internal Server Error" })
+        };
+    }
+};
+-----------------------------------------
