@@ -1,131 +1,40 @@
-Status: Failed
-Test Event Name: requestSkillTest
-
-Response:
-{
-  "errorMessage": "'NoneType' object has no attribute 'get'",
-  "errorType": "AttributeError",
-  "requestId": "4013b36b-ac44-438f-ae10-b19060e4958f",
-  "stackTrace": [
-    "  File \"/var/task/lambda_function.py\", line 12, in lambda_handler\n    employee_id = body.get(\"employeeId\")\n"
-  ]
-}
-
-The area below shows the last 4 KB of the execution log.
-
-Function Logs:
-START RequestId: 4013b36b-ac44-438f-ae10-b19060e4958f Version: $LATEST
-[ERROR] AttributeError: 'NoneType' object has no attribute 'get'
-Traceback (most recent call last):
-  File "/var/task/lambda_function.py", line 12, in lambda_handler
-    employee_id = body.get("employeeId")
-END RequestId: 4013b36b-ac44-438f-ae10-b19060e4958f
-REPORT RequestId: 4013b36b-ac44-438f-ae10-b19060e4958f	Duration: 11.46 ms	Billed Duration: 521 ms	Memory Size: 128 MB	Max Memory Used: 90 MB	Init Duration: 508.80 ms
-
-------------------------------------------------------------------
-exports.handler = async (event) => {
-    try {
-        const AWS = require("aws-sdk");
-        const db = new AWS.DynamoDB();
-
-        const employeeId = event.employeeId;
-        const skillName = event.skillName;
-        const certName = event.certificationName || "N/A";
-        const expiryDate = event.expiryDate || "N/A";
-
-        if (!employeeId || !skillName) {
-            return {
-                statusCode: 400,
-                body: JSON.stringify({ message: "Employee & Skill are required" })
-            };
-        }
-
-        // Generate unique requestId
-        const requestId = "REQ_" + Date.now();
-
-        // Build a safe DynamoDB item (no empty strings)
-        const item = {
-            requestId: { S: requestId },
-            employeeId: { S: employeeId },
-            skillName: { S: skillName },
-            certificationName: { S: certName.trim() || "N/A" },
-            expiryDate: { S: expiryDate.trim() || "N/A" },
-            status: { S: "PENDING" },
-            requestedAt: { S: new Date().toISOString() }
-        };
-
-        await db.putItem({
-            TableName: "SkillRequests",
-            Item: item
-        }).promise();
-
-        return {
-            statusCode: 200,
-            body: JSON.stringify({ message: "Submitted", requestId })
-        };
-
-    } catch (err) {
-        console.log("ERROR:", err);
-        return {
-            statusCode: 500,
-            body: JSON.stringify({ message: "Internal Server Error" })
-        };
-    }
-};
------------------------------------------
-==============================================
-Status: Failed
-Test Event Name: requestSkillTest
-
-Response:
-{
-  "errorMessage": "Syntax error in module 'lambda_function': invalid syntax (lambda_function.py, line 1)",
-  "errorType": "Runtime.UserCodeSyntaxError",
-  "requestId": "",
-  "stackTrace": [
-    "  File \"/var/task/lambda_function.py\" Line 1\n    exports.handler = async (event) => {\n"
-  ]
-}
-
-The area below shows the last 4 KB of the execution log.
-
-Function Logs:
-[WARNING]	2025-12-02T07:39:49.624Z		LAMBDA_WARNING: Unhandled exception. The most likely cause is an issue in the function code. However, in rare cases, a Lambda runtime update can cause unexpected function behavior. For functions using managed runtimes, runtime updates can be triggered by a function change, or can be applied automatically. To determine if the runtime has been updated, check the runtime version in the INIT_START log entry. If this error correlates with a change in the runtime version, you may be able to mitigate this error by temporarily rolling back to the previous runtime version. For more information, see https://docs.aws.amazon.com/lambda/latest/dg/runtimes-update.html
-[ERROR] Runtime.UserCodeSyntaxError: Syntax error in module 'lambda_function': invalid syntax (lambda_function.py, line 1)
-Traceback (most recent call last):
-  File "/var/task/lambda_function.py" Line 1
-    exports.handler = async (event) => {
-INIT_REPORT Init Duration: 161.86 ms	Phase: init	Status: error	Error Type: Runtime.UserCodeSyntaxError
-[WARNING]	2025-12-02T07:39:49.756Z		LAMBDA_WARNING: Unhandled exception. The most likely cause is an issue in the function code. However, in rare cases, a Lambda runtime update can cause unexpected function behavior. For functions using managed runtimes, runtime updates can be triggered by a function change, or can be applied automatically. To determine if the runtime has been updated, check the runtime version in the INIT_START log entry. If this error correlates with a change in the runtime version, you may be able to mitigate this error by temporarily rolling back to the previous runtime version. For more information, see https://docs.aws.amazon.com/lambda/latest/dg/runtimes-update.html
-[ERROR] Runtime.UserCodeSyntaxError: Syntax error in module 'lambda_function': invalid syntax (lambda_function.py, line 1)
-Traceback (most recent call last):
-  File "/var/task/lambda_function.py" Line 1
-    exports.handler = async (event) => {
-INIT_REPORT Init Duration: 104.59 ms	Phase: invoke	Status: error	Error Type: Runtime.UserCodeSyntaxError
-START RequestId: a34ff188-9d4c-46a9-bd1f-087372adac8b Version: $LATEST
-END RequestId: a34ff188-9d4c-46a9-bd1f-087372adac8b
-REPORT RequestId: a34ff188-9d4c-46a9-bd1f-087372adac8b	Duration: 115.36 ms	Billed Duration: 116 ms	Memory Size: 128 MB	Max Memory Used: 47 MB	Status: error	Error Type: Runtime.UserCodeSyntaxError
-
-Request ID: a34ff188-9d4c-46a9-bd1f-087372adac8b
----------------------
 import json
 import boto3
 from datetime import datetime
 import uuid
 
-dynamodb = boto3.resource('dynamodb')
-table = dynamodb.Table('SkillRequests')
+dynamodb = boto3.resource("dynamodb")
+table = dynamodb.Table("SkillRequests")
 
 def lambda_handler(event, context):
     try:
-        body = event.get("body")
-        if isinstance(body, str):
-            body = json.loads(body)
+        # ---------------------------
+        # FIX 1: Safely load body
+        # ---------------------------
+        raw_body = event.get("body")
 
+        # Case: API Gateway passes a string
+        if isinstance(raw_body, str):
+            try:
+                body = json.loads(raw_body)
+            except:
+                body = None
+        
+        # Case: Test event or direct invoke
+        elif isinstance(raw_body, dict):
+            body = raw_body
+        
+        # Case: No body at all
+        else:
+            body = event if isinstance(event, dict) else {}
+
+        # ---------------------------
+        # FIX 2: Extract fields safely
+        # ---------------------------
         employeeId = body.get("employeeId")
         skillName = body.get("skillName")
-        certificationName = body.get("certificationName")
-        expiryDate = body.get("expiryDate")
+        certificationName = body.get("certificationName", "")
+        expiryDate = body.get("expiryDate", "")
 
         if not employeeId or not skillName:
             return {
@@ -133,15 +42,18 @@ def lambda_handler(event, context):
                 "body": json.dumps({"message": "employeeId and skillName are required"})
             }
 
-        requestId = str(uuid.uuid4())
+        # ---------------------------
+        # FIX 3: Insert into DynamoDB
+        # ---------------------------
+        requestId = "REQ_" + str(uuid.uuid4())
         timestamp = datetime.utcnow().isoformat()
 
         item = {
             "requestId": requestId,
             "employeeId": employeeId,
             "skillName": skillName,
-            "certificationName": certificationName if certificationName else "",
-            "expiryDate": expiryDate if expiryDate else "",
+            "certificationName": certificationName,
+            "expiryDate": expiryDate,
             "status": "PENDING",
             "requestedAt": timestamp
         }
@@ -150,29 +62,17 @@ def lambda_handler(event, context):
 
         return {
             "statusCode": 200,
-            "body": json.dumps({"message": "Request submitted successfully", "requestId": requestId})
+            "body": json.dumps({
+                "message": "Request submitted successfully",
+                "requestId": requestId
+            })
         }
 
     except Exception as e:
         return {
             "statusCode": 500,
-            "body": json.dumps({"message": "Internal Server Error", "error": str(e)})
+            "body": json.dumps({
+                "message": "Internal Server Error",
+                "error": str(e)
+            })
         }
-========================================
-Status: Succeeded
-Test Event Name: requestSkillTest
-
-Response:
-{
-  "statusCode": 500,
-  "body": "{\"message\": \"Internal Server Error\", \"error\": \"'NoneType' object has no attribute 'get'\"}"
-}
-
-The area below shows the last 4 KB of the execution log.
-
-Function Logs:
-START RequestId: 22cd5f32-4185-4d16-8ad2-0fb477dadbaf Version: $LATEST
-END RequestId: 22cd5f32-4185-4d16-8ad2-0fb477dadbaf
-REPORT RequestId: 22cd5f32-4185-4d16-8ad2-0fb477dadbaf	Duration: 1.91 ms	Billed Duration: 581 ms	Memory Size: 128 MB	Max Memory Used: 89 MB	Init Duration: 578.56 ms
-
-Request ID: 22cd5f32-4185-4d16-8ad2-0fb477dadbaf
