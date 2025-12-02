@@ -1,50 +1,13 @@
-import json
-import boto3
-from boto3.dynamodb.conditions import Attr
+Status: Succeeded
+Test Event Name: testRead
 
-dynamodb = boto3.resource("dynamodb")
-table = dynamodb.Table("SkillRequests")
-
-def lambda_handler(event, context):
-    try:
-        response = table.scan(
-            FilterExpression=Attr("status").eq("PENDING")
-        )
-        
-        items = response.get("Items", [])
-
-        return {
-            "statusCode": 200,
-            "headers": {
-                "Access-Control-Allow-Origin": "*",
-                "Access-Control-Allow-Headers": "*",
-                "Access-Control-Allow-Methods": "*"
-            },
-            "body": json.dumps(items)
-        }
-
-    except Exception as e:
-        return {
-            "statusCode": 500,
-            "body": json.dumps({
-                "message": "Internal Server Error",
-                "error": str(e)
-            })
-        }
-
-
-------------------
-
+Response:
 {
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Action": [
-        "dynamodb:Scan",
-        "dynamodb:GetItem"
-      ],
-      "Resource": "arn:aws:dynamodb:us-east-1:682470314362:table/SkillRequests"
-    }
-  ]
+  "statusCode": 200,
+  "headers": {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Headers": "*",
+    "Access-Control-Allow-Methods": "*"
+  },
+  "body": "[{\"employeeId\": \"E001\", \"expiryDate\": \"2025-12-19\", \"requestedAt\": \"2025-12-02T08:38:39.676518\", \"status\": \"PENDING\", \"certificationName\": \"CSS\", \"skillName\": \"CSS\", \"requestId\": \"REQ_817087d1-e2f5-4053-bd9f-f90ae9b0be6c\"}, {\"employeeId\": \"E001\", \"expiryDate\": \"2026-01-01\", \"requestedAt\": \"2025-12-01T12:07:15.422277Z\", \"status\": \"PENDING\", \"certificationName\": \"Docker Certified\", \"skillName\": \"Docker\", \"requestId\": \"REQ-1764590835\"}, {\"employeeId\": \"E001\", \"expiryDate\": \"2026-01-01\", \"requestedAt\": \"2025-12-02T08:47:09.403181\", \"status\": \"PENDING\", \"certificationName\": \"test01\", \"skillName\": \"test01\", \"requestId\": \"REQ_56f07e54-f7fb-4747-ae4d-b8231286a216\"}, {\"employeeId\": \"E001\", \"expiryDate\": \"2026-01-01\", \"requestedAt\": \"2025-12-01T12:31:19.134084Z\", \"status\": \"PENDING\", \"certificationName\": \"CSS\", \"skillName\": \"CSS\", \"requestId\": \"REQ-1764592279\"}, {\"employeeId\": \"E001\", \"expiryDate\": \"2025-12-20\", \"requestedAt\": \"2025-12-02T08:36:58.329767\", \"status\": \"PENDING\", \"certificationName\": \"css3\", \"skillName\": \"css3\", \"requestId\": \"REQ_e5b2a85b-7339-4253-bca9-d9aaeb3f62e5\"}]"
 }
