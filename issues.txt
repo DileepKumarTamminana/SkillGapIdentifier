@@ -7,19 +7,27 @@ table = dynamodb.Table("SkillRequests")
 
 def lambda_handler(event, context):
     try:
-        resp = table.scan(
+        response = table.scan(
             FilterExpression=Attr("status").eq("PENDING")
         )
-        
-        items = resp.get("Items", [])
-        
+
+        items = response.get("Items", [])
+
         return {
             "statusCode": 200,
+            "headers": {
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Headers": "*",
+                "Access-Control-Allow-Methods": "*"
+            },
             "body": json.dumps(items)
         }
 
     except Exception as e:
         return {
             "statusCode": 500,
-            "body": json.dumps({"message": "Internal Server Error", "error": str(e)})
+            "body": json.dumps({
+                "message": "Internal Server Error",
+                "error": str(e)
+            })
         }
