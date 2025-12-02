@@ -1,78 +1,8 @@
-import json
-import boto3
-from datetime import datetime
-import uuid
+Status: Succeeded
+Test Event Name: requestSkillTest
 
-dynamodb = boto3.resource("dynamodb")
-table = dynamodb.Table("SkillRequests")
-
-def lambda_handler(event, context):
-    try:
-        # ---------------------------
-        # FIX 1: Safely load body
-        # ---------------------------
-        raw_body = event.get("body")
-
-        # Case: API Gateway passes a string
-        if isinstance(raw_body, str):
-            try:
-                body = json.loads(raw_body)
-            except:
-                body = None
-        
-        # Case: Test event or direct invoke
-        elif isinstance(raw_body, dict):
-            body = raw_body
-        
-        # Case: No body at all
-        else:
-            body = event if isinstance(event, dict) else {}
-
-        # ---------------------------
-        # FIX 2: Extract fields safely
-        # ---------------------------
-        employeeId = body.get("employeeId")
-        skillName = body.get("skillName")
-        certificationName = body.get("certificationName", "")
-        expiryDate = body.get("expiryDate", "")
-
-        if not employeeId or not skillName:
-            return {
-                "statusCode": 400,
-                "body": json.dumps({"message": "employeeId and skillName are required"})
-            }
-
-        # ---------------------------
-        # FIX 3: Insert into DynamoDB
-        # ---------------------------
-        requestId = "REQ_" + str(uuid.uuid4())
-        timestamp = datetime.utcnow().isoformat()
-
-        item = {
-            "requestId": requestId,
-            "employeeId": employeeId,
-            "skillName": skillName,
-            "certificationName": certificationName,
-            "expiryDate": expiryDate,
-            "status": "PENDING",
-            "requestedAt": timestamp
-        }
-
-        table.put_item(Item=item)
-
-        return {
-            "statusCode": 200,
-            "body": json.dumps({
-                "message": "Request submitted successfully",
-                "requestId": requestId
-            })
-        }
-
-    except Exception as e:
-        return {
-            "statusCode": 500,
-            "body": json.dumps({
-                "message": "Internal Server Error",
-                "error": str(e)
-            })
-        }
+Response:
+{
+  "statusCode": 500,
+  "body": "{\"message\": \"Internal Server Error\", \"error\": \"An error occurred (AccessDeniedException) when calling the PutItem operation: User: arn:aws:sts::682470314362:assumed-role/requestSkill-role-k5a3o0fw/requestSkill is not authorized to perform: dynamodb:PutItem on resource: arn:aws:dynamodb:us-east-1:682470314362:table/SkillRequests because no identity-based policy allows the dynamodb:PutItem action\"}"
+}
