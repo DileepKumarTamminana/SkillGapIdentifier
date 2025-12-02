@@ -10,7 +10,7 @@ def lambda_handler(event, context):
         response = table.scan(
             FilterExpression=Attr("status").eq("PENDING")
         )
-
+        
         items = response.get("Items", [])
 
         return {
@@ -31,3 +31,20 @@ def lambda_handler(event, context):
                 "error": str(e)
             })
         }
+
+
+------------------
+
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "dynamodb:Scan",
+        "dynamodb:GetItem"
+      ],
+      "Resource": "arn:aws:dynamodb:us-east-1:682470314362:table/SkillRequests"
+    }
+  ]
+}
