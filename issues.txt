@@ -1,50 +1,13 @@
-import json
-import boto3
-from boto3.dynamodb.conditions import Attr
-
-dynamodb = boto3.resource("dynamodb")
-table = dynamodb.Table("SkillRequests")
-
-def lambda_handler(event, context):
-    try:
-        # Parse the input body for employeeId
-        body = json.loads(event.get("body") or "{}")
-        employeeId = body.get("employeeId")
-
-        if not employeeId:
-            return {
-                "statusCode": 400,
-                "body": json.dumps({"message": "employeeId is required"})
-            }
-
-        # Scan only APPROVED or REJECTED records
-        resp = table.scan(
-            FilterExpression=Attr("employeeId").eq(employeeId) &
-                             Attr("status").ne("PENDING")
-        )
-
-        items = resp.get("Items", [])
-
-        # Count approved and rejected
-        approved = sum(1 for i in items if i.get("status") == "APPROVED")
-        rejected = sum(1 for i in items if i.get("status") == "REJECTED")
-
-        # Return output
-        return {
-            "statusCode": 200,
-            "headers": {
-                "Access-Control-Allow-Origin": "*",
-                "Access-Control-Allow-Headers": "*",
-                "Access-Control-Allow-Methods": "*"
-            },
-            "body": json.dumps({"approved": approved, "rejected": rejected})
-        }
-
-    except Exception as e:
-        return {
-            "statusCode": 500,
-            "body": json.dumps({
-                "message": "Internal Server Error",
-                "error": str(e)
-            })
-        }
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "dynamodb:Scan",
+        "dynamodb:GetItem"
+      ],
+      "Resource": "arn:aws:dynamodb:us-east-1:682470314362:table/SkillRequests"
+    }
+  ]
+}
