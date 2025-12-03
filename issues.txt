@@ -1,10 +1,58 @@
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Action": ["dynamodb:Scan"],
-      "Resource": "arn:aws:dynamodb:us-east-1:682470314362:table/Employees"
-    }
-  ]
-}
+#getExpiringSkills lambda
+
+import json
+import boto3
+from datetime import datetime, timedelta
+
+dynamodb = boto3.resource("dynamodb")
+employees_table = dynamodb.Table("Employees")
+
+def lambda_handler(event, context):
+    try:
+        today = datetime.utcnow().date()
+        cutoff = today + timedelta(days=90)
+
+        res = employees_table.scan()
+        employees = res.get("Items", [])
+
+        expiring = []
+
+        for emp in employees:
+            certs = emp.get("certifications", [])
+            if not isinstance(certs, list):
+                continue
+
+            for cert in certs:
+                expiry = cert.get("expiryDate")
+                if not expiry:
+                    continue
+
+                # Expecting YYYY-MM-DD
+                try:
+                    exp_date = datetime.strptime(expiry, "%Y-%m-%d").date()
+                except:
+                    continue  # skip bad formats
+
+                if today <= exp_date <= cutoff:
+                    expiring.append({
+                        "employeeId": emp.get("employeeId"),
+                        "employeeName": emp.get("name"),
+                        "skill": cert.get("skill"),
+                        "certificationName": cert.get("certificationName"),
+                        "expiryDate": expiry
+                    })
+
+        return {
+            "statusCode": 200,
+            "headers": {
+                "Access-Control-Allow-Origin": "*"
+            },
+            "body": json.dumps(expiring)
+        }
+
+    except Exception as e:
+        print("ERROR:", str(e))
+        return {
+            "statusCode": 500,
+            "body": json.dumps({"message": "Internal Server Error", "error": str(e)})
+        }
