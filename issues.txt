@@ -1,13 +1,50 @@
-Status: Succeeded
-Test Event Name: testRead
+import json
+import boto3
+from boto3.dynamodb.conditions import Attr
 
-Response:
-{
-  "statusCode": 200,
-  "headers": {
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Headers": "*",
-    "Access-Control-Allow-Methods": "*"
-  },
-  "body": "[{\"employeeId\": \"E001\", \"expiryDate\": \"2025-12-19\", \"requestedAt\": \"2025-12-02T08:38:39.676518\", \"status\": \"PENDING\", \"certificationName\": \"CSS\", \"skillName\": \"CSS\", \"requestId\": \"REQ_817087d1-e2f5-4053-bd9f-f90ae9b0be6c\"}, {\"employeeId\": \"E001\", \"expiryDate\": \"2026-01-01\", \"requestedAt\": \"2025-12-01T12:07:15.422277Z\", \"status\": \"PENDING\", \"certificationName\": \"Docker Certified\", \"skillName\": \"Docker\", \"requestId\": \"REQ-1764590835\"}, {\"employeeId\": \"E001\", \"expiryDate\": \"2026-01-01\", \"requestedAt\": \"2025-12-02T08:47:09.403181\", \"status\": \"PENDING\", \"certificationName\": \"test01\", \"skillName\": \"test01\", \"requestId\": \"REQ_56f07e54-f7fb-4747-ae4d-b8231286a216\"}, {\"employeeId\": \"E001\", \"expiryDate\": \"2026-01-01\", \"requestedAt\": \"2025-12-01T12:31:19.134084Z\", \"status\": \"PENDING\", \"certificationName\": \"CSS\", \"skillName\": \"CSS\", \"requestId\": \"REQ-1764592279\"}, {\"employeeId\": \"E001\", \"expiryDate\": \"2025-12-20\", \"requestedAt\": \"2025-12-02T08:36:58.329767\", \"status\": \"PENDING\", \"certificationName\": \"css3\", \"skillName\": \"css3\", \"requestId\": \"REQ_e5b2a85b-7339-4253-bca9-d9aaeb3f62e5\"}]"
-}
+dynamodb = boto3.resource("dynamodb")
+table = dynamodb.Table("SkillRequests")
+
+def lambda_handler(event, context):
+    try:
+        # Parse the input body for employeeId
+        body = json.loads(event.get("body") or "{}")
+        employeeId = body.get("employeeId")
+
+        if not employeeId:
+            return {
+                "statusCode": 400,
+                "body": json.dumps({"message": "employeeId is required"})
+            }
+
+        # Scan only APPROVED or REJECTED records
+        resp = table.scan(
+            FilterExpression=Attr("employeeId").eq(employeeId) &
+                             Attr("status").ne("PENDING")
+        )
+
+        items = resp.get("Items", [])
+
+        # Count approved and rejected
+        approved = sum(1 for i in items if i.get("status") == "APPROVED")
+        rejected = sum(1 for i in items if i.get("status") == "REJECTED")
+
+        # Return output
+        return {
+            "statusCode": 200,
+            "headers": {
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Headers": "*",
+                "Access-Control-Allow-Methods": "*"
+            },
+            "body": json.dumps({"approved": approved, "rejected": rejected})
+        }
+
+    except Exception as e:
+        return {
+            "statusCode": 500,
+            "body": json.dumps({
+                "message": "Internal Server Error",
+                "error": str(e)
+            })
+        }
