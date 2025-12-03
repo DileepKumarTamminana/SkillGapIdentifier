@@ -40,13 +40,11 @@ def lambda_handler(event, context):
         emp_skills = set(extract_skills(emp_skills_raw))
         req_skills = set(extract_skills(role_skills_raw))
  
-        matched = list(emp_skills.intersection(req_skills))
-        missing = list(req_skills.difference(emp_skills))
+        matched = sorted(list(emp_skills.intersection(req_skills)))
+        missing = sorted(list(req_skills.difference(emp_skills)))
  
         total = len(req_skills) or 1
         match_percent = (len(matched) / total) * 100
- 
-        # Convert to Decimal to avoid DynamoDB float error
         match_percent_decimal = Decimal(str(round(match_percent, 2)))
  
         recommendations = []
@@ -59,7 +57,6 @@ def lambda_handler(event, context):
                     "courseLink": c.get("courseLink")
                 })
  
-        # LOG HISTORY (cannot store float → store Decimal or string)
         history_table.put_item(Item={
             "historyId": str(uuid.uuid4()),
             "employeeId": employee_id,
@@ -75,17 +72,17 @@ def lambda_handler(event, context):
             "roleId": role_id,
             "employeeName": emp.get("name"),
             "roleName": role.get("roleName"),
-            "employeeSkills": list(emp_skills),
-            "requiredSkills": list(req_skills),
+            "employeeSkills": sorted(list(emp_skills)),
+            "requiredSkills": sorted(list(req_skills)),
             "matchedSkills": matched,
             "missingSkills": missing,
-            "matchPercent": float(match_percent_decimal),  # send float back to UI
+            "matchPercent": float(match_percent_decimal),
             "recommendedCourses": recommendations
         })
  
     except Exception as e:
         print("ERROR:", str(e))
-        return response(500, {"message": "Internal server error"})
+        return response(500, {"message": "Internal server error", "error": str(e)})
  
 def response(code, body):
     return {
@@ -97,4 +94,3 @@ def response(code, body):
         },
         "body": json.dumps(body)
     }
- 
