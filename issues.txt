@@ -1,54 +1,100 @@
 import json
 import boto3
-
+import uuid
+from datetime import datetime
+from decimal import Decimal
+ 
 dynamodb = boto3.resource("dynamodb")
-table = dynamodb.Table("Employees")
-
+employees_table = dynamodb.Table("Employees")
+roles_table = dynamodb.Table("Roles")
+courses_table = dynamodb.Table("Courses")
+history_table = dynamodb.Table("SkillGapHistory")
+ 
+def extract_skills(raw_list):
+    skills = []
+    for item in raw_list:
+        if isinstance(item, dict) and "S" in item:
+            skills.append(item["S"])
+        elif isinstance(item, str):
+            skills.append(item)
+    return skills
+ 
 def lambda_handler(event, context):
-    body = json.loads(event.get("body") or "{}")
-
-    employeeId = body.get("employeeId")
-    name = body.get("name")
-    currentRole = body.get("currentRole")
-    targetRoleId = body.get("targetRoleId")
-
-    if not employeeId or not name or not currentRole or not targetRoleId:
-        return {
-            "statusCode": 400,
-            "body": json.dumps({"message": "All fields required"})
-        }
-
-    item = {
-        "employeeId": employeeId,
-        "name": name,
-        "currentRole": currentRole,
-        "targetRoleId": targetRoleId,
-        "skills": []        # Empty list
-    }
-
-    table.put_item(Item=item)
-
+    try:
+        body = event.get("body")
+        if isinstance(body, str):
+            body = json.loads(body)
+ 
+        employee_id = body.get("employeeId")
+        role_id = body.get("roleId")
+ 
+        emp = employees_table.get_item(Key={"employeeId": employee_id}).get("Item")
+        role = roles_table.get_item(Key={"roleId": role_id}).get("Item")
+ 
+        if not emp or not role:
+            return response(400, {"message": "Employee or Role not found"})
+ 
+        emp_skills_raw = emp.get("skills", [])
+        role_skills_raw = role.get("requiredSkills", [])
+ 
+        emp_skills = set(extract_skills(emp_skills_raw))
+        req_skills = set(extract_skills(role_skills_raw))
+ 
+        matched = list(emp_skills.intersection(req_skills))
+        missing = list(req_skills.difference(emp_skills))
+ 
+        total = len(req_skills) or 1
+        match_percent = (len(matched) / total) * 100
+ 
+        # Convert to Decimal to avoid DynamoDB float error
+        match_percent_decimal = Decimal(str(round(match_percent, 2)))
+ 
+        recommendations = []
+        for skill in missing:
+            c = courses_table.get_item(Key={"skill": skill}).get("Item")
+            if c:
+                recommendations.append({
+                    "skill": skill,
+                    "courseName": c.get("courseName"),
+                    "courseLink": c.get("courseLink")
+                })
+ 
+        # LOG HISTORY (cannot store float → store Decimal or string)
+        history_table.put_item(Item={
+            "historyId": str(uuid.uuid4()),
+            "employeeId": employee_id,
+            "roleId": role_id,
+            "matchedSkills": matched,
+            "missingSkills": missing,
+            "matchPercent": match_percent_decimal,
+            "timestamp": datetime.utcnow().isoformat() + "Z"
+        })
+ 
+        return response(200, {
+            "employeeId": employee_id,
+            "roleId": role_id,
+            "employeeName": emp.get("name"),
+            "roleName": role.get("roleName"),
+            "employeeSkills": list(emp_skills),
+            "requiredSkills": list(req_skills),
+            "matchedSkills": matched,
+            "missingSkills": missing,
+            "matchPercent": float(match_percent_decimal),  # send float back to UI
+            "recommendedCourses": recommendations
+        })
+ 
+    except Exception as e:
+        print("ERROR:", str(e))
+        return response(500, {"message": "Internal server error"})
+ 
+def response(code, body):
     return {
-        "statusCode": 200,
+        "statusCode": code,
         "headers": {
             "Access-Control-Allow-Origin": "*",
             "Access-Control-Allow-Headers": "*",
             "Access-Control-Allow-Methods": "*"
         },
-        "body": json.dumps({"message": "Employee created"})
+        "body": json.dumps(body)
     }
-
---------------
-
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Action": [
-        "dynamodb:PutItem"
-      ],
-      "Resource": "arn:aws:dynamodb:us-east-1:682470314362:table/Employees"
-    }
-  ]
-}
+ 
