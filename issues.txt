@@ -1,34 +1,13 @@
-import json
-import boto3
-
-dynamodb = boto3.resource("dynamodb")
-table = dynamodb.Table("Employees")
-
-def lambda_handler(event, context):
-    body = json.loads(event.get("body") or "{}")
-
-    employeeId = body.get("employeeId")
-    targetRoleId = body.get("targetRoleId")
-
-    if not employeeId or not targetRoleId:
-        return {
-            "statusCode": 400,
-            "body": json.dumps({"message": "employeeId and targetRoleId required"})
-        }
-
-    resp = table.update_item(
-        Key={"employeeId": employeeId},
-        UpdateExpression="SET targetRoleId = :r",
-        ExpressionAttributeValues={":r": targetRoleId},
-        ReturnValues="UPDATED_NEW"
-    )
-
-    return {
-        "statusCode": 200,
-        "headers": {
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Headers": "*",
-            "Access-Control-Allow-Methods": "*"
-        },
-        "body": json.dumps({"message": "Updated", "updated": resp.get("Attributes", {})})
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "dynamodb:UpdateItem",
+        "dynamodb:GetItem"
+      ],
+      "Resource": "arn:aws:dynamodb:us-east-1:682470314362:table/Employees"
     }
+  ]
+}
