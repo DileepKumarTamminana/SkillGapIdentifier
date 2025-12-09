@@ -1,45 +1,10 @@
-Java
-{
-  "skill": "Java",
-  "courseName": "Java Programming Masterclass",
-  "courseLink": "https://www.udemy.com/course/java-the-complete-java-developer-course/"
-}
+# Try exact match
+c = courses_table.get_item(Key={"skill": skill}).get("Item")
 
-Spring Boot
-{
-  "skill": "Spring Boot",
-  "courseName": "Spring Boot Microservices Course",
-  "courseLink": "https://www.udemy.com/course/spring-boot-microservices-and-spring-cloud/"
-}
+# Try lowercase match if not found
+if not c:
+    c = courses_table.get_item(Key={"skill": skill.lower()}).get("Item")
 
-Git
-{
-  "skill": "Git",
-  "courseName": "Git & GitHub Bootcamp",
-  "courseLink": "https://www.udemy.com/course/git-and-github-bootcamp/"
-}
-
-REST API
-{
-  "skill": "REST API",
-  "courseName": "REST API Development Course",
-  "courseLink": "https://www.udemy.com/course/rest-api/"
-}
-
-SQL
-{
-  "skill": "SQL",
-  "courseName": "Master SQL for Data Engineering",
-  "courseLink": "https://www.udemy.com/course/the-complete-sql-bootcamp/"
-}
-
-Docker
-{
-  "skill": "Docker",
-  "courseName": "Docker for Beginners",
-  "courseLink": "https://www.udemy.com/course/docker-mastery/"
-}
-
-📌 IMPORTANT
-
-The skill key MUST MATCH EXACTLY what your Lambda receives:
+# Try uppercase match if not found
+if not c:
+    c = courses_table.get_item(Key={"skill": skill.upper()}).get("Item")
