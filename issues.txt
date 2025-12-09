@@ -1,14 +1,47 @@
-{
-  "skill": {
-    "S": "Microservices"
+[
+  {
+    "skill": { "S": "SQL" },
+    "courseName": { "S": "The Complete SQL Bootcamp" },
+    "courseLink": { "S": "https://www.udemy.com/course/the-complete-sql-bootcamp/" }
   },
-  "courseId": {
-    "S": "C001"
+  {
+    "skill": { "S": "Git" },
+    "courseName": { "S": "Git & GitHub Bootcamp" },
+    "courseLink": { "S": "https://www.udemy.com/course/git-and-github-bootcamp/" }
   },
-  "courseLink": {
-    "S": "https://example.com/microservices"
+  {
+    "skill": { "S": "REST API" },
+    "courseName": { "S": "REST API Development Masterclass" },
+    "courseLink": { "S": "https://www.udemy.com/course/rest-api/" }
   },
-  "courseName": {
-    "S": "Microservices Bootcamp"
+  {
+    "skill": { "S": "Java" },
+    "courseName": { "S": "Java Programming Masterclass" },
+    "courseLink": { "S": "https://www.udemy.com/course/java-the-complete-java-developer-course/" }
+  },
+  {
+    "skill": { "S": "Spring Boot" },
+    "courseName": { "S": "Spring Boot Microservices Masterclass" },
+    "courseLink": { "S": "https://www.udemy.com/course/spring-boot-microservices-and-spring-cloud/" }
+  },
+  {
+    "skill": { "S": "Docker" },
+    "courseName": { "S": "Docker Mastery" },
+    "courseLink": { "S": "https://www.udemy.com/course/docker-mastery/" }
+  },
+  {
+    "skill": { "S": "Microservices" },
+    "courseName": { "S": "Microservices Architecture & Implementation" },
+    "courseLink": { "S": "https://www.udemy.com/course/microservices-architecture-and-implementation/" }
+  },
+  {
+    "skill": { "S": "System Design" },
+    "courseName": { "S": "Grokking the System Design Interview" },
+    "courseLink": { "S": "https://www.educative.io/courses/grokking-the-system-design-interview" }
+  },
+  {
+    "skill": { "S": "AWS" },
+    "courseName": { "S": "AWS Cloud Practitioner Essentials" },
+    "courseLink": { "S": "https://www.udemy.com/course/aws-certified-cloud-practitioner-new/" }
   }
-}
+]
