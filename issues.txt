@@ -1,21 +1,134 @@
-recommendations = []
+Status: Failed
+Test Event Name: test01
 
-for skill in missing:
+Response:
+{
+  "errorMessage": "Syntax error in module 'lambda_function': expected 'except' or 'finally' block (lambda_function.py, line 50)",
+  "errorType": "Runtime.UserCodeSyntaxError",
+  "requestId": "",
+  "stackTrace": [
+    "  File \"/var/task/lambda_function.py\" Line 50\n        recommendations = []\n"
+  ]
+}
 
-    # Try exact match
-    c = courses_table.get_item(Key={"skill": skill}).get("Item")
+The area below shows the last 4 KB of the execution log.
 
-    # Try lowercase match
-    if not c:
-        c = courses_table.get_item(Key={"skill": skill.lower()}).get("Item")
+Function Logs:
+[WARNING]	2025-12-09T11:35:25.247Z		LAMBDA_WARNING: Unhandled exception. The most likely cause is an issue in the function code. However, in rare cases, a Lambda runtime update can cause unexpected function behavior. For functions using managed runtimes, runtime updates can be triggered by a function change, or can be applied automatically. To determine if the runtime has been updated, check the runtime version in the INIT_START log entry. If this error correlates with a change in the runtime version, you may be able to mitigate this error by temporarily rolling back to the previous runtime version. For more information, see https://docs.aws.amazon.com/lambda/latest/dg/runtimes-update.html
+[ERROR] Runtime.UserCodeSyntaxError: Syntax error in module 'lambda_function': expected 'except' or 'finally' block (lambda_function.py, line 50)
+Traceback (most recent call last):
+  File "/var/task/lambda_function.py" Line 50
+        recommendations = []
+INIT_REPORT Init Duration: 165.58 ms	Phase: init	Status: error	Error Type: Runtime.UserCodeSyntaxError
+[WARNING]	2025-12-09T11:35:25.379Z		LAMBDA_WARNING: Unhandled exception. The most likely cause is an issue in the function code. However, in rare cases, a Lambda runtime update can cause unexpected function behavior. For functions using managed runtimes, runtime updates can be triggered by a function change, or can be applied automatically. To determine if the runtime has been updated, check the runtime version in the INIT_START log entry. If this error correlates with a change in the runtime version, you may be able to mitigate this error by temporarily rolling back to the previous runtime version. For more information, see https://docs.aws.amazon.com/lambda/latest/dg/runtimes-update.html
+[ERROR] Runtime.UserCodeSyntaxError: Syntax error in module 'lambda_function': expected 'except' or 'finally' block (lambda_function.py, line 50)
+Traceback (most recent call last):
+  File "/var/task/lambda_function.py" Line 50
+        recommendations = []
+INIT_REPORT Init Duration: 108.49 ms	Phase: invoke	Status: error	Error Type: Runtime.UserCodeSyntaxError
+START RequestId: 1e3a0bfa-c1a9-4605-a54e-db10daf7ae5d Version: $LATEST
+END RequestId: 1e3a0bfa-c1a9-4605-a54e-db10daf7ae5d
+REPORT RequestId: 1e3a0bfa-c1a9-4605-a54e-db10daf7ae5d	Duration: 118.52 ms	Billed Duration: 119 ms	Memory Size: 128 MB	Max Memory Used: 47 MB	Status: error	Error Type: Runtime.UserCodeSyntaxError
 
-    # Try uppercase match
-    if not c:
-        c = courses_table.get_item(Key={"skill": skill.upper()}).get("Item")
+Request ID: 1e3a0bfa-c1a9-4605-a54e-db10daf7ae5d
 
-    if c:
-        recommendations.append({
-            "skill": skill,
-            "courseName": c.get("courseName"),
-            "courseLink": c.get("courseLink")
+
+--------------
+
+#lambda (initial working one)
+import json
+import boto3
+import uuid
+from datetime import datetime
+from decimal import Decimal
+ 
+dynamodb = boto3.resource("dynamodb")
+employees_table = dynamodb.Table("Employees")
+roles_table = dynamodb.Table("Roles")
+courses_table = dynamodb.Table("Courses")
+history_table = dynamodb.Table("SkillGapHistory")
+ 
+def extract_skills(raw_list):
+    skills = []
+    for item in raw_list:
+        if isinstance(item, dict) and "S" in item:
+            skills.append(item["S"])
+        elif isinstance(item, str):
+            skills.append(item)
+    return skills
+ 
+def lambda_handler(event, context):
+    try:
+        body = event.get("body")
+        if isinstance(body, str):
+            body = json.loads(body)
+ 
+        employee_id = body.get("employeeId")
+        role_id = body.get("roleId")
+ 
+        emp = employees_table.get_item(Key={"employeeId": employee_id}).get("Item")
+        role = roles_table.get_item(Key={"roleId": role_id}).get("Item")
+ 
+        if not emp or not role:
+            return response(400, {"message": "Employee or Role not found"})
+ 
+        emp_skills_raw = emp.get("skills", [])
+        role_skills_raw = role.get("requiredSkills", [])
+ 
+        emp_skills = set(extract_skills(emp_skills_raw))
+        req_skills = set(extract_skills(role_skills_raw))
+ 
+        matched = sorted(list(emp_skills.intersection(req_skills)))
+        missing = sorted(list(req_skills.difference(emp_skills)))
+ 
+        total = len(req_skills) or 1
+        match_percent = (len(matched) / total) * 100
+        match_percent_decimal = Decimal(str(round(match_percent, 2)))
+ 
+        recommendations = []
+        for skill in missing:
+            c = courses_table.get_item(Key={"skill": skill}).get("Item")
+            if c:
+                recommendations.append({
+                    "skill": skill,
+                    "courseName": c.get("courseName"),
+                    "courseLink": c.get("courseLink")
+                })
+ 
+        history_table.put_item(Item={
+            "historyId": str(uuid.uuid4()),
+            "employeeId": employee_id,
+            "roleId": role_id,
+            "matchedSkills": matched,
+            "missingSkills": missing,
+            "matchPercent": match_percent_decimal,
+            "timestamp": datetime.utcnow().isoformat() + "Z"
         })
+ 
+        return response(200, {
+            "employeeId": employee_id,
+            "roleId": role_id,
+            "employeeName": emp.get("name"),
+            "roleName": emp.get("currentRole") or role.get("roleName"),
+            "employeeSkills": sorted(list(emp_skills)),
+            "requiredSkills": sorted(list(req_skills)),
+            "matchedSkills": matched,
+            "missingSkills": missing,
+            "matchPercent": float(match_percent_decimal),
+            "recommendedCourses": recommendations
+        })
+ 
+    except Exception as e:
+        print("ERROR:", str(e))
+        return response(500, {"message": "Internal server error", "error": str(e)})
+ 
+def response(code, body):
+    return {
+        "statusCode": code,
+        "headers": {
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Headers": "*",
+            "Access-Control-Allow-Methods": "*"
+        },
+        "body": json.dumps(body)
+    }
