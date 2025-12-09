@@ -1,119 +1,14 @@
-import json
-import boto3
-import uuid
-from datetime import datetime
-from decimal import Decimal
-
-dynamodb = boto3.resource("dynamodb")
-employees_table = dynamodb.Table("Employees")
-roles_table = dynamodb.Table("Roles")
-courses_table = dynamodb.Table("Courses")
-history_table = dynamodb.Table("SkillGapHistory")
-
-def extract_skills(raw_list):
-    skills = []
-    for item in raw_list:
-        if isinstance(item, dict) and "S" in item:
-            skills.append(item["S"])
-        elif isinstance(item, str):
-            skills.append(item)
-    return skills
-
-def lambda_handler(event, context):
-    try:
-        body = event.get("body")
-        if isinstance(body, str):
-            body = json.loads(body)
-
-        employee_id = body.get("employeeId")
-        role_id = body.get("roleId")
-
-        emp = employees_table.get_item(Key={"employeeId": employee_id}).get("Item")
-        role = roles_table.get_item(Key={"roleId": role_id}).get("Item")
-
-        if not emp or not role:
-            return response(400, {"message": "Employee or Role not found"})
-
-        emp_skills_raw = emp.get("skills", [])
-        role_skills_raw = role.get("requiredSkills", [])
-
-        emp_skills = set(extract_skills(emp_skills_raw))
-        req_skills = set(extract_skills(role_skills_raw))
-
-        matched = sorted(list(emp_skills.intersection(req_skills)))
-        missing = sorted(list(req_skills.difference(emp_skills)))
-
-        total = len(req_skills) or 1
-        match_percent = (len(matched) / total) * 100
-        match_percent_decimal = Decimal(str(round(match_percent, 2)))
-
-        # ----------------------------
-        # FIXED RECOMMENDATION LOGIC
-        # ----------------------------
-        recommendations = []
-
-        for skill in missing:
-
-            # Try exact match
-            c = courses_table.get_item(Key={"skill": skill}).get("Item")
-
-            # Try lowercase
-            if not c:
-                c = courses_table.get_item(Key={"skill": skill.lower()}).get("Item")
-
-            # Try uppercase
-            if not c:
-                c = courses_table.get_item(Key={"skill": skill.upper()}).get("Item")
-
-            # If match found → append
-            if c:
-                recommendations.append({
-                    "skill": skill,
-                    "courseName": c.get("courseName"),
-                    "courseLink": c.get("courseLink")
-                })
-
-        # ----------------------------
-        # SAVE HISTORY
-        # ----------------------------
-        history_table.put_item(Item={
-            "historyId": str(uuid.uuid4()),
-            "employeeId": employee_id,
-            "roleId": role_id,
-            "matchedSkills": matched,
-            "missingSkills": missing,
-            "matchPercent": match_percent_decimal,
-            "timestamp": datetime.utcnow().isoformat() + "Z"
-        })
-
-        # ----------------------------
-        # RETURN RESPONSE
-        # ----------------------------
-        return response(200, {
-            "employeeId": employee_id,
-            "roleId": role_id,
-            "employeeName": emp.get("name"),
-            "roleName": emp.get("currentRole") or role.get("roleName"),
-            "employeeSkills": sorted(list(emp_skills)),
-            "requiredSkills": sorted(list(req_skills)),
-            "matchedSkills": matched,
-            "missingSkills": missing,
-            "matchPercent": float(match_percent_decimal),
-            "recommendedCourses": recommendations
-        })
-
-    except Exception as e:
-        print("ERROR:", str(e))
-        return response(500, {"message": "Internal server error", "error": str(e)})
-
-
-def response(code, body):
-    return {
-        "statusCode": code,
-        "headers": {
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Headers": "*",
-            "Access-Control-Allow-Methods": "*"
-        },
-        "body": json.dumps(body)
-    }
+{
+  "skill": {
+    "S": "Microservices"
+  },
+  "courseId": {
+    "S": "C001"
+  },
+  "courseLink": {
+    "S": "https://example.com/microservices"
+  },
+  "courseName": {
+    "S": "Microservices Bootcamp"
+  }
+}
