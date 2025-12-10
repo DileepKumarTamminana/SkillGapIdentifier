@@ -651,67 +651,68 @@
             margin-bottom: 12px;
             border: 1px solid var(--card-border);
         }
+
         /* Fix Team Skill Gap table spacing issue */
-.team-table {
-    width: 100%;
-    border-collapse: collapse;
-}
+        .team-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
 
-.team-table th,
-.team-table td {
-    padding: 10px;
-    text-align: left;
-}
+        .team-table th,
+        .team-table td {
+            padding: 10px;
+            text-align: left;
+        }
 
-.team-table tr {
-    height: auto;
-    line-height: normal;
-}
+        .team-table tr {
+            height: auto;
+            line-height: normal;
+        }
 
-.team-table tbody tr:hover {
-    background: rgba(0, 106, 255, 0.08);
-}
-/* Make "Select Employee" (Choices.js) look like normal select */
+        .team-table tbody tr:hover {
+            background: rgba(0, 106, 255, 0.08);
+        }
 
-/* Wrapper behaves like normal input */
-.choices {
-    width: 100%;
-    margin-bottom: 10px;
-}
+        /* Make "Select Employee" (Choices.js) look like normal select */
 
-/* Main box */
-.choices__inner {
-    background: var(--card-bg) !important;
-    border: 1px solid var(--card-border) !important;
-    border-radius: 8px !important;
-    padding: 9px 12px !important;
-    min-height: 42px !important;
-    box-shadow: none !important;
-    font-size: 14px;
-}
+        /* Wrapper behaves like normal input */
+        .choices {
+            width: 100%;
+            margin-bottom: 10px;
+        }
 
-/* Selected text */
-.choices__list--single .choices__item {
-    padding: 0 !important;
-    margin: 0 !important;
-}
+        /* Main box */
+        .choices__inner {
+            background: var(--card-bg) !important;
+            border: 1px solid var(--card-border) !important;
+            border-radius: 8px !important;
+            padding: 9px 12px !important;
+            min-height: 42px !important;
+            box-shadow: none !important;
+            font-size: 14px;
+        }
 
-/* Dropdown arrow to match normal select */
-.choices[data-type*='select-one']::after {
-    border-color: #666 transparent transparent transparent !important;
-    right: 12px;
-}
+        /* Selected text */
+        .choices__list--single .choices__item {
+            padding: 0 !important;
+            margin: 0 !important;
+        }
 
-/* Dark mode arrow + text */
-.dark-mode .choices[data-type*='select-one']::after {
-    border-color: #e0e0e0 transparent transparent transparent !important;
-}
-.dark-mode .choices__inner {
-    background: var(--card-bg) !important;
-    border-color: var(--card-border) !important;
-}
+        /* Dropdown arrow to match normal select */
+        .choices[data-type*='select-one']::after {
+            border-color: #666 transparent transparent transparent !important;
+            right: 12px;
+        }
 
+        /* Dark mode arrow + text */
+        .dark-mode .choices[data-type*='select-one']::after {
+            border-color: #e0e0e0 transparent transparent transparent !important;
+        }
 
+        .dark-mode .choices__inner {
+            background: var(--card-bg) !important;
+            border-color: var(--card-border) !important;
+        }
     </style>
 </head>
 
@@ -1283,16 +1284,18 @@
                 return;
             }
 
-box.innerHTML = data.map(r => `
+            box.innerHTML = data.map(r => `
     <div class="entry">
-        <strong>${r.employeeName || "Unknown"} (${r.employeeId})</strong> 
-        requested <strong>${r.skillName}</strong><br>
-        
-        Certification: ${r.certificationName || "N/A"}<br>
-        Expiry: ${r.expiryDate || "N/A"}<br>
-
-        <button class="primary-btn" onclick="approveSkill('${r.requestId}','APPROVE')">Approve</button>
-        <button class="secondary-btn" onclick="approveSkill('${r.requestId}','REJECT')">Reject</button>
+        <strong>${r.employeeName} (${r.employeeId})</strong><br>
+        Requested Skill: <strong>${r.skillName}</strong><br>
+        Certification: <strong>${r.certificationName || "N/A"}</strong><br>
+        Expiry: <strong>${r.expiryDate || "N/A"}</strong><br>
+        <button class="primary-btn" onclick="approveSkill('${r.requestId}','APPROVE')">
+            Approve
+        </button>
+        <button class="secondary-btn" onclick="approveSkill('${r.requestId}','REJECT')">
+            Reject
+        </button>
     </div>
 `).join("");
 
@@ -1346,9 +1349,9 @@ box.innerHTML = data.map(r => `
             box.innerHTML = data.map(e => `
             <div class="entry">
                 <strong>${e.employeeName} (${e.employeeId})</strong><br>
-                Skill: ${e.skill}<br>
-                Certification: ${e.certificationName}<br>
-                Expiry: ${e.expiryDate}
+                Skill: <strong>${e.skill} </strong><br>
+                Certification: <strong>${e.certificationName}</strong><br>
+                Expiry: <strong>${e.expiryDate}</strong>
             </div>
         `).join("");
 
@@ -1361,83 +1364,83 @@ box.innerHTML = data.map(r => `
     /*     TEAM SKILL GAP TRACKER      */
     /* =============================== */
 
-async function runTeamSkillGap() {
-    const box = document.getElementById("team-table-wrapper");
+    async function runTeamSkillGap() {
+        const box = document.getElementById("team-table-wrapper");
 
-    console.log("RUN BUTTON CLICKED");   // DEBUG-1
+        console.log("RUN BUTTON CLICKED");   // DEBUG-1
 
-    box.innerHTML = `<div class="loader"></div>Running...`;
+        box.innerHTML = `<div class="loader"></div>Running...`;
 
-    try {
-        console.log("Employees List:", employeesList);   // DEBUG-2
+        try {
+            console.log("Employees List:", employeesList);   // DEBUG-2
 
-        if (!employeesList || employeesList.length === 0) {
-            box.innerHTML = `<p style="color:red;">No employees loaded. employeesList is EMPTY.</p>`;
-            return;
-        }
-
-        let rows = [];
-
-        for (const emp of employeesList) {
-            console.log("Processing employee:", emp);    // DEBUG-3
-
-            if (!emp.targetRoleId) {
-                console.log("Skipping employee (No targetRoleId):", emp.employeeId);
-                continue;
+            if (!employeesList || employeesList.length === 0) {
+                box.innerHTML = `<p style="color:red;">No employees loaded. employeesList is EMPTY.</p>`;
+                return;
             }
 
-            let data = null;
+            let rows = [];
 
-            try {
-                const res = await fetch(`${API_BASE}/skill-gap`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
+            for (const emp of employeesList) {
+                console.log("Processing employee:", emp);    // DEBUG-3
+
+                if (!emp.targetRoleId) {
+                    console.log("Skipping employee (No targetRoleId):", emp.employeeId);
+                    continue;
+                }
+
+                let data = null;
+
+                try {
+                    const res = await fetch(`${API_BASE}/skill-gap`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            employeeId: emp.employeeId,
+                            roleId: emp.targetRoleId
+                        })
+                    });
+
+                    data = await res.json();
+                    console.log("Skill Gap API result:", data); // DEBUG-4
+
+                } catch (innerErr) {
+                    console.error("API fetch failed:", innerErr);
+                    continue;
+                }
+
+                if (!data || !data.matchPercent || !data.missingSkills) {
+                    rows.push({
                         employeeId: emp.employeeId,
-                        roleId: emp.targetRoleId
-                    })
-                });
+                        name: emp.name,
+                        roleId: emp.targetRoleId,
+                        roleName: emp.currentRole || "Unknown",
+                        match: "N/A",
+                        missing: "N/A"
+                    });
+                    continue;
+                }
 
-                data = await res.json();
-                console.log("Skill Gap API result:", data); // DEBUG-4
-
-            } catch (innerErr) {
-                console.error("API fetch failed:", innerErr);
-                continue;
-            }
-
-            if (!data || !data.matchPercent || !data.missingSkills) {
                 rows.push({
                     employeeId: emp.employeeId,
                     name: emp.name,
                     roleId: emp.targetRoleId,
-                    roleName: emp.currentRole || "Unknown",
-                    match: "N/A",
-                    missing: "N/A"
+                    roleName: data.roleName || emp.currentRole || "Unknown",
+                    match: data.matchPercent,
+                    missing: data.missingSkills.length
                 });
-                continue;
             }
 
-            rows.push({
-                employeeId: emp.employeeId,
-                name: emp.name,
-                roleId: emp.targetRoleId,
-                roleName: data.roleName || emp.currentRole || "Unknown",
-                match: data.matchPercent,
-                missing: data.missingSkills.length
-            });
-        }
+            console.log("Final rows:", rows);   // DEBUG-5
 
-        console.log("Final rows:", rows);   // DEBUG-5
+            if (rows.length === 0) {
+                box.innerHTML = `<p style="color:red;">No data generated. Something is missing.</p>`;
+                return;
+            }
 
-        if (rows.length === 0) {
-            box.innerHTML = `<p style="color:red;">No data generated. Something is missing.</p>`;
-            return;
-        }
+            rows.sort((a, b) => (a.roleId > b.roleId ? 1 : -1));
 
-        rows.sort((a, b) => (a.roleId > b.roleId ? 1 : -1));
-
-        box.innerHTML = `
+            box.innerHTML = `
         <div class="team-table-wrapper">
             <table class="team-table">
                 <thead>
@@ -1462,12 +1465,12 @@ async function runTeamSkillGap() {
                 </tbody>
             </table>
         </div>`;
-        
-    } catch (err) {
-        console.error("Team Skill Gap Error:", err);
-        box.innerHTML = `<p style="color:red;">Error running team analysis.</p>`;
+
+        } catch (err) {
+            console.error("Team Skill Gap Error:", err);
+            box.innerHTML = `<p style="color:red;">Error running team analysis.</p>`;
+        }
     }
-}
 
 
     /* =============================== */
