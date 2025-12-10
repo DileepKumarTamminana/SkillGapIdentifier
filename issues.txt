@@ -1,47 +1,23 @@
-[
-  {
-    "skill": { "S": "SQL" },
-    "courseName": { "S": "The Complete SQL Bootcamp" },
-    "courseLink": { "S": "https://www.udemy.com/course/the-complete-sql-bootcamp/" }
-  },
-  {
-    "skill": { "S": "Git" },
-    "courseName": { "S": "Git & GitHub Bootcamp" },
-    "courseLink": { "S": "https://www.udemy.com/course/git-and-github-bootcamp/" }
-  },
-  {
-    "skill": { "S": "REST API" },
-    "courseName": { "S": "REST API Development Masterclass" },
-    "courseLink": { "S": "https://www.udemy.com/course/rest-api/" }
-  },
-  {
-    "skill": { "S": "Java" },
-    "courseName": { "S": "Java Programming Masterclass" },
-    "courseLink": { "S": "https://www.udemy.com/course/java-the-complete-java-developer-course/" }
-  },
-  {
-    "skill": { "S": "Spring Boot" },
-    "courseName": { "S": "Spring Boot Microservices Masterclass" },
-    "courseLink": { "S": "https://www.udemy.com/course/spring-boot-microservices-and-spring-cloud/" }
-  },
-  {
-    "skill": { "S": "Docker" },
-    "courseName": { "S": "Docker Mastery" },
-    "courseLink": { "S": "https://www.udemy.com/course/docker-mastery/" }
-  },
-  {
-    "skill": { "S": "Microservices" },
-    "courseName": { "S": "Microservices Architecture & Implementation" },
-    "courseLink": { "S": "https://www.udemy.com/course/microservices-architecture-and-implementation/" }
-  },
-  {
-    "skill": { "S": "System Design" },
-    "courseName": { "S": "Grokking the System Design Interview" },
-    "courseLink": { "S": "https://www.educative.io/courses/grokking-the-system-design-interview" }
-  },
-  {
-    "skill": { "S": "AWS" },
-    "courseName": { "S": "AWS Cloud Practitioner Essentials" },
-    "courseLink": { "S": "https://www.udemy.com/course/aws-certified-cloud-practitioner-new/" }
-  }
-]
+🔥 Modify Lambda to JOIN Employees Table
+
+Add this inside your pending-requests Lambda (Python):
+
+emp = employees_table.get_item(Key={"employeeId": item["employeeId"]}).get("Item", {})
+item["employeeName"] = emp.get("name", "Unknown")
+
+
+Full updated block:
+
+response_items = []
+for item in items:
+    emp = employees_table.get_item(Key={"employeeId": item["employeeId"]}).get("Item", {})
+    
+    response_items.append({
+        "requestId": item["requestId"],
+        "employeeId": item["employeeId"],
+        "employeeName": emp.get("name", "Unknown"),
+        "skillName": item.get("skillName"),
+        "certificationName": item.get("certificationName"),
+        "expiryDate": item.get("expiryDate"),
+        "requestedAt": item.get("requestedAt")
+    })
