@@ -1,67 +1,17 @@
-import json
-import boto3
-from boto3.dynamodb.conditions import Key
-from decimal import Decimal
+Status: Succeeded
+Test Event Name: test01
 
-dynamodb = boto3.resource("dynamodb")
-table = dynamodb.Table("SkillGapHistory")
+Response:
+{
+  "statusCode": 500,
+  "body": "{\"message\": \"Internal Server Error\", \"error\": \"An error occurred (ValidationException) when calling the Query operation: The table does not have the specified index: skillgapIndex\"}"
+}
 
-# Fix for Decimal serialization
-def convert_decimal(obj):
-    if isinstance(obj, list):
-        return [convert_decimal(i) for i in obj]
-    if isinstance(obj, dict):
-        return {k: convert_decimal(v) for k, v in obj.items()}
-    if isinstance(obj, Decimal):
-        return int(obj) if obj % 1 == 0 else float(obj)
-    return obj
+The area below shows the last 4 KB of the execution log.
 
-def lambda_handler(event, context):
-    try:
-        body = json.loads(event.get("body", "{}"))
+Function Logs:
+START RequestId: 450f3bb5-017a-4ea4-a642-bc95e175bc81 Version: $LATEST
+END RequestId: 450f3bb5-017a-4ea4-a642-bc95e175bc81
+REPORT RequestId: 450f3bb5-017a-4ea4-a642-bc95e175bc81	Duration: 323.28 ms	Billed Duration: 1080 ms	Memory Size: 128 MB	Max Memory Used: 92 MB	Init Duration: 756.39 ms
 
-        employeeId = body.get("employeeId")
-        roleId = body.get("roleId")  # optional
-
-        if not employeeId:
-            return {
-                "statusCode": 400,
-                "body": json.dumps({"message": "employeeId is required"})
-            }
-
-        # Query using GSI
-        response = table.query(
-            IndexName="skillgapIndex",
-            KeyConditionExpression=Key("employeeId").eq(employeeId)
-        )
-
-        items = response.get("Items", [])
-
-        # Optional filter by roleId
-        if roleId:
-            items = [i for i in items if i.get("roleId") == roleId]
-
-        # Sort by timestamp DESC (latest first)
-        items.sort(key=lambda x: x.get("timestamp", ""), reverse=True)
-
-        # Return TOP 5 entries
-        items = items[:5]
-
-        return {
-            "statusCode": 200,
-            "headers": {
-                "Access-Control-Allow-Origin": "*",
-                "Access-Control-Allow-Headers": "*",
-                "Access-Control-Allow-Methods": "*"
-            },
-            "body": json.dumps(convert_decimal(items))
-        }
-
-    except Exception as e:
-        return {
-            "statusCode": 500,
-            "body": json.dumps({
-                "message": "Internal Server Error",
-                "error": str(e)
-            })
-        }
+Request ID: 450f3bb5-017a-4ea4-a642-bc95e175bc81
