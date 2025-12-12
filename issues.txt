@@ -1,42 +1,11 @@
-import json
-import boto3
-from boto3.dynamodb.conditions import Key
-
-dynamodb = boto3.resource("dynamodb")
-table = dynamodb.Table("SkillGapHistory")
-
-def lambda_handler(event, context):
-    try:
-        body = event.get("body")
-        if isinstance(body, str):
-            body = json.loads(body)
-
-        employee_id = body.get("employeeId")
-        if not employee_id:
-            return response(400, {"message": "employeeId is required"})
-
-        # Query using GSI
-        res = table.query(
-            IndexName="skillgapIndex",
-            KeyConditionExpression=Key("employeeId").eq(employee_id),
-            ScanIndexForward=False,   # newest first
-            Limit=5                   # only latest 5
-        )
-
-        items = res.get("Items", [])
-
-        return response(200, items)
-
-    except Exception as e:
-        return response(500, {"message": "Internal Server Error", "error": str(e)})
-
-def response(code, body):
-    return {
-        "statusCode": code,
-        "headers": {
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Headers": "*",
-            "Access-Control-Allow-Methods": "*"
-        },
-        "body": json.dumps(body)
-    }
+{
+  "Effect": "Allow",
+  "Action": [
+    "dynamodb:Query",
+    "dynamodb:PutItem"
+  ],
+  "Resource": [
+    "arn:aws:dynamodb:us-east-1:YOUR_ACC_ID:table/SkillGapHistory",
+    "arn:aws:dynamodb:us-east-1:YOUR_ACC_ID:table/SkillGapHistory/index/*"
+  ]
+}
