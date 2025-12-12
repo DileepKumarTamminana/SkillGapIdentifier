@@ -713,10 +713,15 @@
             background: var(--card-bg) !important;
             border-color: var(--card-border) !important;
         }
+
+        .history-fav {
+            border-left: 4px solid #ffd54f;
+            background: rgba(255, 245, 224, 0.6);
+        }
     </style>
 </head>
 
-<body>
+<body> 
 
     <!-- HEADER -->
     <div class="header">
@@ -1174,48 +1179,186 @@
     /*           HISTORY               */
     /* =============================== */
 
-    async function loadHistory() {
-        const employeeId = document.getElementById("employeeId").value;
-        const roleId = document.getElementById("roleId").value;
-        const box = document.getElementById("historyOutput");
-
-        if (!employeeId) {
-            box.innerHTML = `<p style="color:red;">Select an employee.</p>`;
+async function loadHistory() {
+    const employeeId = document.getElementById("employeeId").value;
+    const roleId = document.getElementById("roleId").value;
+    const box = document.getElementById("historyOutput");
+ 
+    if (!employeeId) {
+        box.innerHTML = `<p style="color:red;">Select an employee.</p>`;
+        return;
+    }
+ 
+    box.innerHTML = `<div class="loader"></div>Loading...`;
+ 
+    try {
+        const res = await fetch(`${API_BASE}/history`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ employeeId, roleId })
+        });
+ 
+        let data = await res.json();
+        if (data.body) data = JSON.parse(data.body);
+ 
+        if (!data.length) {
+            box.innerHTML = "No history found.";
             return;
         }
-
-        box.innerHTML = `<div class="loader"></div>Loading...`;
-
-        try {
-            const res = await fetch(`${API_BASE}/history`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ employeeId, roleId })
-            });
-
-            let data = await res.json();
-
-            if (data.body) data = JSON.parse(data.body);
-
-            if (!data.length) {
-                box.innerHTML = "No history found.";
-                return;
-            }
-
-            box.innerHTML = data.map(h => `
+ 
+        box.innerHTML = data.map((h, i) => `
             <div class="entry">
-                <strong>Role:</strong> ${h.roleId}<br>
-                <strong>Match:</strong> ${h.matchPercent}%<br>
-                <strong>Missing:</strong> ${h.missingSkills.join(", ")}<br>
+                <strong>${i === 0 ? "⭐ Latest" : ""}</strong><br>
+                Match: ${h.matchPercent}%<br>
+                Missing: ${h.missingSkills.join(", ")}<br>
                 <small>${h.timestamp}</small>
             </div>
         `).join("");
 
-        } catch (err) {
-            box.innerHTML = `<p style="color:red;">Error loading history.</p>`;
-        }
+    } catch (err) {
+        box.innerHTML = `<p style="color:red;">Error loading history.</p>`;
     }
+}
 
+// ========== History Pagination & Favorites ========== //
+
+// API endpoints - replace with your API Gateway endpoints
+const API_getHistory = `${API_BASE}/get-skillgap-history`;
+const API_toggleFav = `${API_BASE}/toggle-favorite-history`;
+const API_exportCsv = `${API_BASE}/export-history-csv`;
+ 
+// Keep track of lastKey for pagination
+let historyLastKey = null;
+let historyLimit = 5;
+ 
+// load history page
+async function loadHistoryPage(limit = 5, lastKey = null) {
+    const emp = document.getElementById("employeeId").value;
+    if (!emp) {
+        document.getElementById("historyOutput").innerHTML = `<p style="color:red;">Select employee</p>`;
+        return;
+    }
+    const payload = { employeeId: emp, limit };
+    if (lastKey) payload.lastEvaluatedKey = lastKey;
+ 
+    const out = document.getElementById("historyOutput");
+    out.innerHTML = `<div class="loader"></div> Loading...`;
+    try {
+        const res = await fetch(API_getHistory, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        const items = data.items || [];
+        historyLastKey = data.lastEvaluatedKey || null;
+ 
+        if (!items.length) {
+            out.innerHTML = `<p>No history found.</p>`;
+            return;
+        }
+ 
+        out.innerHTML = `
+            ${items.map(it => `
+                <div class="entry" id="hist_${it.historyId}">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <div>
+                            <strong>${it.roleId || ''}</strong> • ${it.timestamp || ''} <br>
+                            <span>Match: ${it.matchPercent || 0}%</span>
+                        </div>
+                        <div style="text-align:right;">
+                            <button onclick="toggleFavUI('${it.historyId}', ${!!it.favorite})" 
+                                    title="Toggle favorite" style="background:none;border:none;font-size:18px;cursor:pointer">
+                                ${it.favorite ? '⭐' : '☆'}
+                            </button>
+                        </div>
+                    </div>
+                    <div style="margin-top:8px;">
+                        <strong>Matched:</strong> ${(it.matchedSkills || []).join(", ")}<br>
+                        <strong>Missing:</strong> ${(it.missingSkills || []).join(", ")}
+                    </div>
+                </div>
+            `).join("")}
+ 
+            <div style="margin-top:10px;">
+                <button ${!historyLastKey ? 'disabled' : ''} onclick="loadMoreHistory()" class="primary-btn">Load More</button>
+                <button onclick="downloadHistoryCsv()" class="secondary-btn">Download CSV</button>
+            </div>
+        `;
+    } catch (err) {
+        console.error(err);
+        out.innerHTML = `<p style="color:red;">Error loading history.</p>`;
+    }
+}
+ 
+function loadMoreHistory() {
+    if (!historyLastKey) return;
+    loadHistoryPage(historyLimit, historyLastKey);
+}
+ 
+// toggle favorite via UI + API
+async function toggleFavUI(historyId, currentlyFav) {
+    try {
+        // optimistic UI update
+        const button = document.querySelector(`#hist_${historyId} button`);
+        if (button) button.innerText = currentlyFav ? '☆' : '⭐';
+ 
+        const res = await fetch(API_toggleFav, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ historyId, favorite: !currentlyFav })
+        });
+        const data = await res.json();
+        // reload the current page for consistency
+        loadHistoryPage(historyLimit); 
+    } catch (err) {
+        console.error(err);
+        // revert UI on failure
+        loadHistoryPage(historyLimit);
+    }
+}
+ 
+// download CSV (will trigger browser download if API returns proper headers)
+function downloadHistoryCsv() {
+    const emp = document.getElementById("employeeId").value;
+    if (!emp) { alert("Select employee"); return; }
+ 
+    // open a new window so Content-Disposition can prompt download
+    const form = document.createElement("form");
+    form.method = "POST";
+    form.action = API_exportCsv;
+    form.target = "_blank";
+ 
+    const input = document.createElement("input");
+    input.type = "hidden";
+    input.name = "body";
+    // API expects JSON body; we will send JSON as string in a single 'body' field
+    input.value = JSON.stringify({ employeeId: emp });
+    form.appendChild(input);
+    document.body.appendChild(form);
+    form.submit();
+    form.remove();
+}
+
+//========== Alternative download via fetch + Blob ==========
+async function downloadHistoryCsv_fetch() {
+    const emp = document.getElementById("employeeId").value;
+    const res = await fetch(API_exportCsv, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ employeeId: emp })
+    });
+    const text = await res.text();
+    const blob = new Blob([text], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `skill-history-${emp}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+}
+ 
+ 
     /* =============================== */
     /*      REQUEST LEARNED SKILL      */
     /* =============================== */
