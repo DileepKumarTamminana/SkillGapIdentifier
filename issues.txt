@@ -1,3 +1,22 @@
+Status: Succeeded
+Test Event Name: test01
+
+Response:
 {
-  "body": "{\"employeeId\": \"E001\", \"roleId\": \"R001\"}"
+  "statusCode": 500,
+  "headers": {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Headers": "*",
+    "Access-Control-Allow-Methods": "*"
+  },
+  "body": "{\"message\": \"Internal Server Error\", \"error\": \"Object of type Decimal is not JSON serializable\"}"
 }
+
+The area below shows the last 4 KB of the execution log.
+
+Function Logs:
+START RequestId: 09f7822a-3785-412d-8fec-dabc198854cf Version: $LATEST
+END RequestId: 09f7822a-3785-412d-8fec-dabc198854cf
+REPORT RequestId: 09f7822a-3785-412d-8fec-dabc198854cf	Duration: 35.62 ms	Billed Duration: 36 ms	Memory Size: 128 MB	Max Memory Used: 92 MB
+
+Request ID: 09f7822a-3785-412d-8fec-dabc198854cf
