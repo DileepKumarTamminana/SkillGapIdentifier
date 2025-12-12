@@ -1,11 +1,3 @@
 {
-  "Effect": "Allow",
-  "Action": [
-    "dynamodb:Query",
-    "dynamodb:PutItem"
-  ],
-  "Resource": [
-    "arn:aws:dynamodb:us-east-1:YOUR_ACC_ID:table/SkillGapHistory",
-    "arn:aws:dynamodb:us-east-1:YOUR_ACC_ID:table/SkillGapHistory/index/*"
-  ]
+  "body": "{\"employeeId\": \"E001\", \"roleId\": \"R001\"}"
 }
