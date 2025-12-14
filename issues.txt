@@ -22,10 +22,8 @@ def extract_skills(raw_list):
         return skills
 
     for item in raw_list:
-        # Case: DynamoDB attribute map: {"S": "Java"}
         if isinstance(item, dict) and "S" in item:
             skills.append(item["S"])
-        # Case: Simple string list
         elif isinstance(item, str):
             skills.append(item)
 
@@ -37,7 +35,7 @@ def extract_skills(raw_list):
 # -----------------------------
 def lambda_handler(event, context):
     try:
-        # Parse body (API Gateway proxy)
+        # Parse body
         body = event.get("body")
         if isinstance(body, str):
             body = json.loads(body)
@@ -48,9 +46,7 @@ def lambda_handler(event, context):
         if not employee_id or not role_id:
             return response(400, {"message": "employeeId and roleId are required"})
 
-        # -----------------------------
-        #  LOAD EMPLOYEE + ROLE
-        # -----------------------------
+        # Load employee + role
         emp = employees_table.get_item(Key={"employeeId": employee_id}).get("Item")
         role = roles_table.get_item(Key={"roleId": role_id}).get("Item")
 
@@ -62,19 +58,17 @@ def lambda_handler(event, context):
         # -----------------------------
         #  SKILL EXTRACTION
         # -----------------------------
-        emp_skills_raw = emp.get("skills", [])
-        role_skills_raw = role.get("requiredSkills", [])
+        employee_skills = set(extract_skills(emp.get("skills", [])))
+        required_skills = set(extract_skills(role.get("requiredSkills", [])))
 
-        employee_skills = set(extract_skills(emp_skills_raw))
-        required_skills = set(extract_skills(role_skills_raw))
-
-        # If role has no skills → avoid division by 0
         total = len(required_skills) or 1
-
+        
         matched = sorted(list(employee_skills.intersection(required_skills)))
         missing = sorted(list(required_skills.difference(employee_skills)))
 
         match_percent = round((len(matched) / total) * 100, 2)
+
+        # Decimal-safe conversion
         match_percent_decimal = Decimal(str(match_percent))
 
         # -----------------------------
@@ -91,20 +85,20 @@ def lambda_handler(event, context):
                 })
 
         # -----------------------------
-        #  WRITE HISTORY (Latest 5 only)
+        #  WRITE SAFE HISTORY ENTRY
         # -----------------------------
-        safe_percent = float(match_percent_decimal) if match_percent_decimal is not None else 0.0
-
-        history_table.put_item(Item={
+        history_entry = {
             "historyId": str(uuid.uuid4()),
             "employeeId": employee_id,
             "roleId": role_id,
-            "matchedSkills": matched,
-            "missingSkills": missing,
-            "matchPercent": Decimal(str(match_percent or 0)),
-            "favourite": False,
-            "timestamp": datetime.now().isoformat() + "Z"
-        })
+            "matchedSkills": matched or [],     # safe default
+            "missingSkills": missing or [],     # safe default
+            "matchPercent": match_percent_decimal,  # safe decimal
+            "favourite": False,                 # always present
+            "timestamp": datetime.utcnow().isoformat() + "Z"
+        }
+
+        history_table.put_item(Item=history_entry)
 
         # -----------------------------
         #  FINAL RESPONSE TO UI
@@ -121,7 +115,9 @@ def lambda_handler(event, context):
             "matchedSkills": matched,
             "missingSkills": missing,
 
-            "matchPercent": float(match_percent_decimal),
+            # UI-safe numeric value
+            "matchPercent": float(match_percent),
+
             "recommendedCourses": recommendations
         })
 
