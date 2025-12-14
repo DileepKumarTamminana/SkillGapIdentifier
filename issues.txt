@@ -27,6 +27,7 @@
         }
       }
     },
+
     {
       "PutRequest": {
         "Item": {
@@ -36,6 +37,7 @@
         }
       }
     },
+
     {
       "PutRequest": {
         "Item": {
@@ -45,11 +47,12 @@
         }
       }
     },
+
     {
       "PutRequest": {
         "Item": {
           "skill": { "S": "SQL" },
-          "courseName": { "S": "SQL Bootcamp — Go from Zero to Hero" },
+          "courseName": { "S": "SQL Bootcamp — Zero to Hero" },
           "courseLink": { "S": "https://www.udemy.com/course/the-complete-sql-bootcamp/" }
         }
       }
@@ -64,6 +67,7 @@
         }
       }
     },
+
     {
       "PutRequest": {
         "Item": {
@@ -73,6 +77,7 @@
         }
       }
     },
+
     {
       "PutRequest": {
         "Item": {
@@ -82,24 +87,27 @@
         }
       }
     },
+
     {
       "PutRequest": {
         "Item": {
           "skill": { "S": "CI/CD" },
-          "courseName": { "S": "CI/CD Pipelines: Jenkins, GitHub Actions & AWS" },
+          "courseName": { "S": "CI/CD Pipelines with Jenkins, GitHub Actions & AWS" },
           "courseLink": { "S": "https://www.udemy.com/course/ci-cd-pipeline/" }
         }
       }
     },
+
     {
       "PutRequest": {
         "Item": {
           "skill": { "S": "CodePipeline" },
-          "courseName": { "S": "AWS CodePipeline & CodeBuild Masterclass" },
+          "courseName": { "S": "AWS CodePipeline Masterclass" },
           "courseLink": { "S": "https://www.udemy.com/course/aws-codepipeline/" }
         }
       }
     },
+
     {
       "PutRequest": {
         "Item": {
@@ -114,11 +122,12 @@
       "PutRequest": {
         "Item": {
           "skill": { "S": "CloudFormation" },
-          "courseName": { "S": "AWS CloudFormation for Beginners" },
+          "courseName": { "S": "AWS CloudFormation Masterclass" },
           "courseLink": { "S": "https://www.udemy.com/course/aws-cloudformation-master-class/" }
         }
       }
     },
+
     {
       "PutRequest": {
         "Item": {
@@ -128,6 +137,7 @@
         }
       }
     },
+
     {
       "PutRequest": {
         "Item": {
@@ -137,15 +147,17 @@
         }
       }
     },
+
     {
       "PutRequest": {
         "Item": {
           "skill": { "S": "Node.js" },
-          "courseName": { "S": "Node.js Complete Developer Bootcamp" },
+          "courseName": { "S": "Node.js Developer Bootcamp" },
           "courseLink": { "S": "https://www.udemy.com/course/the-complete-nodejs-developer-course-2/" }
         }
       }
     },
+
     {
       "PutRequest": {
         "Item": {
@@ -155,15 +167,17 @@
         }
       }
     },
+
     {
       "PutRequest": {
         "Item": {
           "skill": { "S": "Terraform" },
-          "courseName": { "S": "Terraform for Beginners with AWS" },
+          "courseName": { "S": "Terraform — Beginner to Advanced" },
           "courseLink": { "S": "https://www.udemy.com/course/terraform-beginner-to-advanced/" }
         }
       }
     },
+
     {
       "PutRequest": {
         "Item": {
@@ -183,6 +197,7 @@
         }
       }
     },
+
     {
       "PutRequest": {
         "Item": {
