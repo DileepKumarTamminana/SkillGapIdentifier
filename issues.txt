@@ -12,7 +12,13 @@ def convert_decimal(obj):
     if isinstance(obj, list):
         return [convert_decimal(i) for i in obj]
     if isinstance(obj, dict):
-        return {k: convert_decimal(v) for k, v in obj.items()}
+        new_obj = {}
+        for k, v in obj.items():
+            if isinstance(v, Decimal):
+                new_obj[k] = float(v)
+            else:
+                new_obj[k] = convert_decimal(v)
+        return new_obj
     if isinstance(obj, Decimal):
         return float(obj)
     return obj
@@ -20,6 +26,7 @@ def convert_decimal(obj):
 
 def lambda_handler(event, context):
     try:
+        # Parse event
         body = event.get("body")
         if isinstance(body, str):
             body = json.loads(body)
@@ -28,33 +35,65 @@ def lambda_handler(event, context):
         if not employee_id:
             return resp(400, {"message": "employeeId required"})
 
-        # Fetch ALL logs for employee
-        result = history_table.query(
-            IndexName="skillGapIndex",
-            KeyConditionExpression=Key("employeeId").eq(employee_id)
-        )
+        items = []
 
-        items = result.get("Items", [])
+        # ------------------------------------------
+        # 1️⃣ TRY GSI QUERY FIRST
+        # ------------------------------------------
+        try:
+            gsi_result = history_table.query(
+                IndexName="skillGapIndex",
+                KeyConditionExpression=Key("employeeId").eq(employee_id)
+            )
+            items = gsi_result.get("Items", [])
+        except Exception as e:
+            print("GSI ERROR:", str(e))
+
+        # ------------------------------------------
+        # 2️⃣ FALLBACK — FULL SCAN (for missing items)
+        # ------------------------------------------
+        if not items:
+            print("FALLING BACK TO SCAN — GSI incomplete")
+            scan_result = history_table.scan()
+            scan_items = scan_result.get("Items", [])
+            items = [i for i in scan_items if i.get("employeeId") == employee_id]
+
+        # ------------------------------------------
+        # No history at all
+        # ------------------------------------------
         if not items:
             return resp(200, {"currentLog": None, "favoriteLogs": []})
 
-        # Sort by timestamp desc
-        items = sorted(items, key=lambda x: x.get("timestamp", ""), reverse=True)
+        # ------------------------------------------
+        # Fix missing fields
+        # ------------------------------------------
+        for it in items:
+            it.setdefault("matchPercent", 0)
+            it.setdefault("favourite", False)
+            it.setdefault("timestamp", "1970-01-01T00:00:00Z")
 
-        # Latest log (current)
+        # ------------------------------------------
+        # Sort newest first
+        # ------------------------------------------
+        items = sorted(items, key=lambda x: x["timestamp"], reverse=True)
+
         current_log = items[0]
 
-        # Top 5 favourite logs
-        fav_logs = [i for i in items if i.get("favourite") is True]
-        fav_logs = sorted(fav_logs, key=lambda x: x.get("timestamp", ""), reverse=True)
-        fav_logs = fav_logs[:5]
+        favourite_logs = [i for i in items if i.get("favourite") is True]
+        favourite_logs = sorted(favourite_logs, key=lambda x: x["timestamp"], reverse=True)
+        favourite_logs = favourite_logs[:5]
+
+        # Convert decimals → float
+        current_log = convert_decimal(current_log)
+        favourite_logs = convert_decimal(favourite_logs)
 
         return resp(200, {
-            "currentLog": convert_decimal(current_log),
-            "favoriteLogs": convert_decimal(fav_logs)
+            "currentLog": current_log,
+            "favoriteLogs": favourite_logs
         })
 
     except Exception as e:
+        print("ERROR:", str(e))
         return resp(500, {"error": str(e)})
 
 
