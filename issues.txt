@@ -1,80 +1,13 @@
-import json
 import boto3
-from boto3.dynamodb.conditions import Key
 from decimal import Decimal
 
 dynamodb = boto3.resource("dynamodb")
 table = dynamodb.Table("SkillGapHistory")
 
-def convert_decimal(obj):
-    if isinstance(obj, list):
-        return [convert_decimal(i) for i in obj]
-    if isinstance(obj, dict):
-        return {k: convert_decimal(v) for k, v in obj.items()}
-    if isinstance(obj, Decimal):
-        return float(obj)
-    return obj
-
-def fix_array(value):
-    if isinstance(value, list):
-        return value
-    if isinstance(value, str):
-        return [x.strip() for x in value.split(",") if x.strip()]
-    return []
-
 def lambda_handler(event, context):
-    try:
-        body = json.loads(event.get("body", "{}"))
-        employeeId = body.get("employeeId")
-        roleId = body.get("roleId")
-
-        if not employeeId:
-            return {"statusCode": 400, "body": json.dumps({"message": "employeeId missing"})}
-
-        response = table.query(
-            IndexName="skillsgapIndex",
-            KeyConditionExpression=Key("employeeId").eq(employeeId)
-        )
-
-        items = response.get("Items", [])
-
-        cleaned = []
-        for x in items:
-            try:
-                # ensure missingSkills & matchedSkills are arrays
-                x["missingSkills"] = fix_array(x.get("missingSkills", []))
-                x["matchedSkills"] = fix_array(x.get("matchedSkills", []))
-
-                # ensure timestamp exists
-                if not x.get("timestamp"):
-                    x["timestamp"] = "1970-01-01T00:00:00Z"
-
-                cleaned.append(x)
-            except:
-                continue  # skip corrupted rows
-
-        # optional filter by role
-        if roleId:
-            cleaned = [i for i in cleaned if i.get("roleId") == roleId]
-
-        # sort by time
-        cleaned.sort(key=lambda x: x.get("timestamp", ""), reverse=True)
-
-        # return last 5
-        cleaned = cleaned[:5]
-
-        return {
-            "statusCode": 200,
-            "headers": {
-                "Access-Control-Allow-Origin": "*",
-                "Access-Control-Allow-Headers": "*",
-                "Access-Control-Allow-Methods": "*"
-            },
-            "body": json.dumps(convert_decimal(cleaned))
-        }
-
-    except Exception as e:
-        return {
-            "statusCode": 500,
-            "body": json.dumps({"message": "Internal Server Error", "error": str(e)})
-        }
+    response = table.scan()
+    for item in response["Items"]:
+        if "matchPercent" not in item or item["matchPercent"] is None:
+            item["matchPercent"] = Decimal("0")
+            table.put_item(Item=item)
+    return "Fixed"
