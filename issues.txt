@@ -1,14 +1,202 @@
-{
-    "Effect": "Allow",
-    "Action": [
-        "dynamodb:Query",
-        "dynamodb:UpdateItem",
-        "dynamodb:DeleteItem",
-        "dynamodb:GetItem",
-        "dynamodb:Scan"
-    ],
-    "Resource": [
-        "arn:aws:dynamodb:us-east-1:ACCOUNT_ID:table/SkillGapHistory",
-        "arn:aws:dynamodb:us-east-1:ACCOUNT_ID:table/SkillGapHistory/index/*"
-    ]
-}
+openapi: "3.0.1"
+info:
+  title: "SkillGapIdentifierAPI"
+  version: "2025-12-14 10:00:13UTC"
+servers:
+- url: "https://dx87uzkcm2.execute-api.us-east-1.amazonaws.com/{basePath}"
+  variables:
+    basePath:
+      default: ""
+paths:
+  /assignments:
+    get:
+      responses:
+        default:
+          description: "Default response for GET /assignments"
+      x-amazon-apigateway-integration:
+        payloadFormatVersion: "2.0"
+        type: "aws_proxy"
+        httpMethod: "POST"
+        uri: "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:682470314362:function:getLearningAssignments/invocations"
+        connectionType: "INTERNET"
+  /employees:
+    get:
+      responses:
+        default:
+          description: "Default response for GET /employees"
+      x-amazon-apigateway-integration:
+        payloadFormatVersion: "2.0"
+        type: "aws_proxy"
+        httpMethod: "POST"
+        uri: "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:682470314362:function:getEmployees/invocations"
+        connectionType: "INTERNET"
+  /expiring-skills:
+    get:
+      responses:
+        default:
+          description: "Default response for GET /expiring-skills"
+      x-amazon-apigateway-integration:
+        payloadFormatVersion: "2.0"
+        type: "aws_proxy"
+        httpMethod: "POST"
+        uri: "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:682470314362:function:getExpiringSkills/invocations"
+        connectionType: "INTERNET"
+  /pending-requests:
+    get:
+      responses:
+        default:
+          description: "Default response for GET /pending-requests"
+      x-amazon-apigateway-integration:
+        payloadFormatVersion: "2.0"
+        type: "aws_proxy"
+        httpMethod: "POST"
+        uri: "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:682470314362:function:getPendingSkillRequests/invocations"
+        connectionType: "INTERNET"
+  /roles:
+    get:
+      responses:
+        default:
+          description: "Default response for GET /roles"
+      x-amazon-apigateway-integration:
+        payloadFormatVersion: "2.0"
+        type: "aws_proxy"
+        httpMethod: "POST"
+        uri: "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:682470314362:function:getRoles/invocations"
+        connectionType: "INTERNET"
+  /skill-gap:
+    post:
+      responses:
+        default:
+          description: "Default response for POST /skill-gap"
+      x-amazon-apigateway-integration:
+        payloadFormatVersion: "2.0"
+        type: "aws_proxy"
+        httpMethod: "POST"
+        uri: "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:682470314362:function:SkillGapIdentifier/invocations"
+        connectionType: "INTERNET"
+    options:
+      responses:
+        default:
+          description: "Default response for OPTIONS /skill-gap"
+  /add-skill:
+    post:
+      responses:
+        default:
+          description: "Default response for POST /add-skill"
+      x-amazon-apigateway-integration:
+        payloadFormatVersion: "2.0"
+        type: "aws_proxy"
+        httpMethod: "POST"
+        uri: "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:682470314362:function:addSkillToEmployee/invocations"
+        connectionType: "INTERNET"
+  /approve-skill:
+    post:
+      responses:
+        default:
+          description: "Default response for POST /approve-skill"
+      x-amazon-apigateway-integration:
+        payloadFormatVersion: "2.0"
+        type: "aws_proxy"
+        httpMethod: "POST"
+        uri: "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:682470314362:function:approveSkillRequest/invocations"
+        connectionType: "INTERNET"
+  /assign-learning:
+    post:
+      responses:
+        default:
+          description: "Default response for POST /assign-learning"
+      x-amazon-apigateway-integration:
+        payloadFormatVersion: "2.0"
+        type: "aws_proxy"
+        httpMethod: "POST"
+        uri: "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:682470314362:function:assignLearning/invocations"
+        connectionType: "INTERNET"
+  /create-employee:
+    post:
+      responses:
+        default:
+          description: "Default response for POST /create-employee"
+      x-amazon-apigateway-integration:
+        payloadFormatVersion: "2.0"
+        type: "aws_proxy"
+        httpMethod: "POST"
+        uri: "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:682470314362:function:create-employee/invocations"
+        connectionType: "INTERNET"
+  /employee-requests-status:
+    post:
+      responses:
+        default:
+          description: "Default response for POST /employee-requests-status"
+      x-amazon-apigateway-integration:
+        payloadFormatVersion: "2.0"
+        type: "aws_proxy"
+        httpMethod: "POST"
+        uri: "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:682470314362:function:employee-request-status/invocations"
+        connectionType: "INTERNET"
+  /history:
+    post:
+      responses:
+        default:
+          description: "Default response for POST /history"
+      x-amazon-apigateway-integration:
+        payloadFormatVersion: "2.0"
+        type: "aws_proxy"
+        httpMethod: "POST"
+        uri: "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:682470314362:function:getSkillGapHistory/invocations"
+        connectionType: "INTERNET"
+  /history/export:
+    post:
+      responses:
+        default:
+          description: "Default response for POST /history/export"
+      x-amazon-apigateway-integration:
+        payloadFormatVersion: "2.0"
+        type: "aws_proxy"
+        httpMethod: "POST"
+        uri: "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:682470314362:function:exportHistoryCsv/invocations"
+        connectionType: "INTERNET"
+  /history/favorite:
+    post:
+      responses:
+        default:
+          description: "Default response for POST /history/favorite"
+      x-amazon-apigateway-integration:
+        payloadFormatVersion: "2.0"
+        type: "aws_proxy"
+        httpMethod: "POST"
+        uri: "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:682470314362:function:toggleFavoriteHistory/invocations"
+        connectionType: "INTERNET"
+  /request-skill:
+    post:
+      responses:
+        default:
+          description: "Default response for POST /request-skill"
+      x-amazon-apigateway-integration:
+        payloadFormatVersion: "2.0"
+        type: "aws_proxy"
+        httpMethod: "POST"
+        uri: "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:682470314362:function:requestSkill/invocations"
+        connectionType: "INTERNET"
+  /update-employee-role:
+    post:
+      responses:
+        default:
+          description: "Default response for POST /update-employee-role"
+      x-amazon-apigateway-integration:
+        payloadFormatVersion: "2.0"
+        type: "aws_proxy"
+        httpMethod: "POST"
+        uri: "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:682470314362:function:update-employee-role/invocations"
+        connectionType: "INTERNET"
+x-amazon-apigateway-cors:
+  allowMethods:
+  - "GET"
+  - "OPTIONS"
+  - "POST"
+  allowHeaders:
+  - "content-type"
+  maxAge: 0
+  allowCredentials: false
+  allowOrigins:
+  - "*"
+x-amazon-apigateway-importexport-version: "1.0"
