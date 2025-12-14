@@ -1,4 +1,3 @@
-#getSkillGapHistory
 import json
 import boto3
 from decimal import Decimal
@@ -27,7 +26,7 @@ def convert_decimal(obj):
 
 def lambda_handler(event, context):
     try:
-        # Parse event
+        # Parse event body
         body = event.get("body")
         if isinstance(body, str):
             body = json.loads(body)
@@ -38,9 +37,7 @@ def lambda_handler(event, context):
 
         items = []
 
-        # ------------------------------------------
-        # 1️⃣ TRY GSI QUERY FIRST
-        # ------------------------------------------
+        # 1️⃣ Query using GSI
         try:
             gsi_result = history_table.query(
                 IndexName="skillGapIndex",
@@ -50,48 +47,31 @@ def lambda_handler(event, context):
         except Exception as e:
             print("GSI ERROR:", str(e))
 
-        # ------------------------------------------
-        # 2️⃣ FALLBACK — FULL SCAN (for missing items)
-        # ------------------------------------------
+        # 2️⃣ Fallback scan
         if not items:
-            print("FALLING BACK TO SCAN — GSI incomplete")
+            print("GSI empty, scanning full table...")
             scan_result = history_table.scan()
             scan_items = scan_result.get("Items", [])
             items = [i for i in scan_items if i.get("employeeId") == employee_id]
 
-        # ------------------------------------------
-        # No history at all
-        # ------------------------------------------
+        # If STILL empty → return empty array (UI handles it)
         if not items:
-            return resp(200, {"currentLog": None, "favoriteLogs": []})
+            return resp(200, [])
 
-        # ------------------------------------------
-        # Fix missing fields
-        # ------------------------------------------
+        # 3️⃣ Fix missing fields & sort
         for it in items:
             it.setdefault("matchPercent", 0)
             it.setdefault("favourite", False)
             it.setdefault("timestamp", "1970-01-01T00:00:00Z")
 
-        # ------------------------------------------
-        # Sort newest first
-        # ------------------------------------------
+        # Sort by timestamp desc
         items = sorted(items, key=lambda x: x["timestamp"], reverse=True)
 
-        current_log = items[0]
+        # Convert decimals
+        items = convert_decimal(items)
 
-        favourite_logs = [i for i in items if i.get("favourite") is True]
-        favourite_logs = sorted(favourite_logs, key=lambda x: x["timestamp"], reverse=True)
-        favourite_logs = favourite_logs[:5]
-
-        # Convert decimals → float
-        current_log = convert_decimal(current_log)
-        favourite_logs = convert_decimal(favourite_logs)
-
-        return resp(200, {
-            "currentLog": current_log,
-            "favoriteLogs": favourite_logs
-        })
+        # 4️⃣ Return FLAT ARRAY (as UI expects)
+        return resp(200, items)
 
     except Exception as e:
         print("ERROR:", str(e))
@@ -101,128 +81,6 @@ def lambda_handler(event, context):
 def resp(status, body):
     return {
         "statusCode": status,
-        "headers": {
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Headers": "*",
-            "Access-Control-Allow-Methods": "*"
-        },
-        "body": json.dumps(body)
-    }
-
-
-#SkillGapIdentifier
-
-import json
-import boto3
-import uuid
-from datetime import datetime
-from decimal import Decimal
-
-dynamodb = boto3.resource("dynamodb")
-
-employees_table = dynamodb.Table("Employees")
-roles_table = dynamodb.Table("Roles")
-courses_table = dynamodb.Table("Courses")
-history_table = dynamodb.Table("SkillGapHistory")
-
-
-def extract_skills(raw_list):
-    """Normalize DynamoDB list values."""
-    if not raw_list:
-        return []
-    skills = []
-    for item in raw_list:
-        if isinstance(item, dict) and "S" in item:
-            skills.append(item["S"])
-        elif isinstance(item, str):
-            skills.append(item)
-    return skills
-
-
-def lambda_handler(event, context):
-    try:
-        # Parse event body
-        body = event.get("body")
-        if isinstance(body, str):
-            body = json.loads(body)
-
-        employee_id = body.get("employeeId")
-        role_id = body.get("roleId")
-
-        if not employee_id or not role_id:
-            return response(400, {"message": "employeeId and roleId are required"})
-
-        # Fetch employee & role
-        emp = employees_table.get_item(Key={"employeeId": employee_id}).get("Item")
-        role = roles_table.get_item(Key={"roleId": role_id}).get("Item")
-
-        if not emp:
-            return response(404, {"message": f"Employee {employee_id} not found"})
-        if not role:
-            return response(404, {"message": f"Role {role_id} not found"})
-
-        # Skills extraction
-        employee_skills = set(extract_skills(emp.get("skills", [])))
-        required_skills = set(extract_skills(role.get("requiredSkills", [])))
-
-        total = len(required_skills) or 1
-
-        matched = sorted(list(employee_skills & required_skills))
-        missing = sorted(list(required_skills - employee_skills))
-
-        match_percent = round((len(matched) / total) * 100, 2)
-        match_percent_decimal = Decimal(str(match_percent))
-
-        # Recommendations
-        recommendations = []
-        for skill in missing:
-            course_item = courses_table.get_item(Key={"skill": skill}).get("Item")
-            if course_item:
-                recommendations.append({
-                    "skill": skill,
-                    "courseName": course_item.get("courseName"),
-                    "courseLink": course_item.get("courseLink")
-                })
-
-        # History entry
-        history_entry = {
-            "historyId": str(uuid.uuid4()),
-            "employeeId": employee_id,
-            "roleId": role_id,
-            "matchedSkills": matched,
-            "missingSkills": missing,
-            "matchPercent": match_percent_decimal,
-            "favourite": False,
-            "timestamp": datetime.utcnow().isoformat() + "Z"
-        }
-
-        history_table.put_item(Item=history_entry)
-
-        # Final return
-        return response(200, {
-            "employeeId": employee_id,
-            "employeeName": emp.get("name"),
-            "roleId": role_id,
-            "roleName": role.get("roleName") or emp.get("currentRole"),
-
-            "employeeSkills": sorted(list(employee_skills)),
-            "requiredSkills": sorted(list(required_skills)),
-
-            "matchedSkills": matched,
-            "missingSkills": missing,
-
-            "matchPercent": float(match_percent),
-            "recommendedCourses": recommendations
-        })
-
-    except Exception as e:
-        print("ERROR in SkillGapIdentifier:", str(e))
-        return response(500, {"message": "Internal Server Error", "error": str(e)})
-
-
-def response(code, body):
-    return {
-        "statusCode": code,
         "headers": {
             "Access-Control-Allow-Origin": "*",
             "Access-Control-Allow-Headers": "*",
