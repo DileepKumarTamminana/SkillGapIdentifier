@@ -1,16 +1,55 @@
+import csv
+import io
 import json
 import boto3
+from boto3.dynamodb.conditions import Key
+from decimal import Decimal
 
 dynamodb = boto3.resource("dynamodb")
 table = dynamodb.Table("SkillGapHistory")
 
+
+def clean(x):
+    return float(x) if isinstance(x, Decimal) else x
+
+
 def lambda_handler(event, context):
     body = json.loads(event["body"])
-    history_id = body.get("historyId")
+    employee_id = body.get("employeeId")
 
-    table.delete_item(Key={"historyId": history_id})
+    res = table.query(
+        IndexName="skillGapIndex",
+        KeyConditionExpression=Key("employeeId").eq(employee_id)
+    )
+
+    items = res.get("Items", [])
+    items = sorted(items, key=lambda x: x["timestamp"], reverse=True)
+
+    current = items[0]
+    favs = [i for i in items if i.get("favourite")]
+    favs = sorted(favs, key=lambda x: x["timestamp"], reverse=True)[:5]
+
+    export_list = [current] + favs
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["historyId", "timestamp", "matchPercent", "matchedSkills", "missingSkills"])
+
+    for row in export_list:
+        writer.writerow([
+            row["historyId"],
+            row["timestamp"],
+            clean(row["matchPercent"]),
+            ", ".join(row["matchedSkills"]),
+            ", ".join(row["missingSkills"])
+        ])
 
     return {
         "statusCode": 200,
-        "body": json.dumps({"message": "Log deleted"})
+        "headers": {
+            "Content-Type": "text/csv",
+            "Content-Disposition": f"attachment; filename=history-{employee_id}.csv",
+            "Access-Control-Allow-Origin": "*"
+        },
+        "body": output.getvalue()
     }
