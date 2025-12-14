@@ -1,31 +1,9 @@
-import boto3
-import json
-import os
-from datetime import datetime
-
-dynamodb = boto3.resource("dynamodb")
-table = dynamodb.Table("SkillGapHistory")
-
-def lambda_handler(event, context):
-    try:
-        body = json.loads(event.get("body", "{}"))
-        historyId = body.get("historyId")
-
-        if not historyId:
-            return {"statusCode": 400, "body": json.dumps({"message": "historyId is required"})}
-
-        # delete item
-        table.delete_item(
-            Key={"historyId": historyId}
-        )
-
-        return {
-            "statusCode": 200,
-            "body": json.dumps({"message": "History deleted successfully"})
-        }
-
-    except Exception as e:
-        return {
-            "statusCode": 500,
-            "body": json.dumps({"message": "Error deleting history", "error": str(e)})
-        }
+{
+  "Effect": "Allow",
+  "Action": [
+    "dynamodb:DeleteItem",
+    "dynamodb:GetItem",
+    "dynamodb:Query"
+  ],
+  "Resource": "arn:aws:dynamodb:us-east-1:682470314362:table/SkillGapHistory"
+}
