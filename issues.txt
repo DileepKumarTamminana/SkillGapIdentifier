@@ -1,40 +1,17 @@
-Status: Failed
-Test Event Name: Test01
-
-Response:
 {
-  "errorMessage": "An error occurred (AccessDeniedException) when calling the Query operation: User: arn:aws:sts::682470314362:assumed-role/debugHistory-role-25uchv66/debugHistory is not authorized to perform: dynamodb:Query on resource: arn:aws:dynamodb:us-east-1:682470314362:table/SkillGapHistory/index/skillGapIndex because no identity-based policy allows the dynamodb:Query action",
-  "errorType": "ClientError",
-  "requestId": "f9d5f98d-49a3-4106-95bd-afaea5dc1db6",
-  "stackTrace": [
-    "  File \"/var/task/lambda_function.py\", line 8, in lambda_handler\n    resp = table.query(\n",
-    "  File \"/var/lang/lib/python3.14/site-packages/boto3/resources/factory.py\", line 581, in do_action\n    response = action(self, *args, **kwargs)\n",
-    "  File \"/var/lang/lib/python3.14/site-packages/boto3/resources/action.py\", line 88, in __call__\n    response = getattr(parent.meta.client, operation_name)(*args, **params)\n",
-    "  File \"/var/lang/lib/python3.14/site-packages/botocore/client.py\", line 602, in _api_call\n    return self._make_api_call(operation_name, kwargs)\n",
-    "  File \"/var/lang/lib/python3.14/site-packages/botocore/context.py\", line 123, in wrapper\n    return func(*args, **kwargs)\n",
-    "  File \"/var/lang/lib/python3.14/site-packages/botocore/client.py\", line 1078, in _make_api_call\n    raise error_class(parsed_response, operation_name)\n"
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "dynamodb:Query",
+        "dynamodb:Scan",
+        "dynamodb:GetItem"
+      ],
+      "Resource": [
+        "arn:aws:dynamodb:us-east-1:682470314362:table/SkillGapHistory",
+        "arn:aws:dynamodb:us-east-1:682470314362:table/SkillGapHistory/index/*"
+      ]
+    }
   ]
 }
-
-The area below shows the last 4 KB of the execution log.
-
-Function Logs:
-START RequestId: f9d5f98d-49a3-4106-95bd-afaea5dc1db6 Version: $LATEST
-[ERROR] ClientError: An error occurred (AccessDeniedException) when calling the Query operation: User: arn:aws:sts::682470314362:assumed-role/debugHistory-role-25uchv66/debugHistory is not authorized to perform: dynamodb:Query on resource: arn:aws:dynamodb:us-east-1:682470314362:table/SkillGapHistory/index/skillGapIndex because no identity-based policy allows the dynamodb:Query action
-Traceback (most recent call last):
-  File "/var/task/lambda_function.py", line 8, in lambda_handler
-    resp = table.query(
-  File "/var/lang/lib/python3.14/site-packages/boto3/resources/factory.py", line 581, in do_action
-    response = action(self, *args, **kwargs)
-  File "/var/lang/lib/python3.14/site-packages/boto3/resources/action.py", line 88, in __call__
-    response = getattr(parent.meta.client, operation_name)(*args, **params)
-  File "/var/lang/lib/python3.14/site-packages/botocore/client.py", line 602, in _api_call
-    return self._make_api_call(operation_name, kwargs)
-  File "/var/lang/lib/python3.14/site-packages/botocore/context.py", line 123, in wrapper
-    return func(*args, **kwargs)
-  File "/var/lang/lib/python3.14/site-packages/botocore/client.py", line 1078, in _make_api_call
-    raise error_class(parsed_response, operation_name)
-END RequestId: f9d5f98d-49a3-4106-95bd-afaea5dc1db6
-REPORT RequestId: f9d5f98d-49a3-4106-95bd-afaea5dc1db6	Duration: 55.86 ms	Billed Duration: 56 ms	Memory Size: 128 MB	Max Memory Used: 93 MB
-
-Request ID: f9d5f98d-49a3-4106-95bd-afaea5dc1db6
