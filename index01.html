@@ -718,10 +718,285 @@
             border-left: 4px solid #ffd54f;
             background: rgba(255, 245, 224, 0.6);
         }
+
+        /* ---------- Skill Gap History Styles ---------- */
+        .history-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 8px;
+        }
+
+        /* Single history item */
+        .history-item {
+            display: flex;
+            gap: 12px;
+            padding: 12px;
+            border-radius: 10px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            align-items: flex-start;
+            transition: transform 0.12s ease, box-shadow 0.12s ease;
+        }
+
+        /* Hover lift */
+        .history-item:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+        }
+
+        /* Left column: meta (timestamp + star) */
+        .history-meta {
+            width: 120px;
+            min-width: 120px;
+            text-align: left;
+            font-size: 12px;
+            color: var(--subtext);
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        /* Timestamp */
+        .history-timestamp {
+            font-weight: 700;
+            color: var(--text);
+            font-size: 13px;
+        }
+
+        /* Star / favorite button */
+        .star-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 8px;
+            border-radius: 999px;
+            font-weight: 700;
+            cursor: pointer;
+            border: 1px solid transparent;
+            background: transparent;
+            color: var(--subtext);
+            transition: background 0.12s ease, color 0.12s ease;
+        }
+
+        .star-btn .star-icon {
+            font-size: 14px;
+        }
+
+        /* Favorite (active) state */
+        .starred {
+            background: linear-gradient(90deg, rgba(255, 223, 93, 0.12), rgba(255, 223, 93, 0.06));
+            color: #b57f00;
+            border-color: rgba(255, 223, 93, 0.25);
+            box-shadow: 0 4px 12px rgba(181, 127, 0, 0.06);
+        }
+
+        /* Center column: content */
+        .history-body {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        /* Title - role + match percent */
+        .history-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            justify-content: space-between;
+        }
+
+        .history-role {
+            font-weight: 800;
+            color: var(--text);
+            font-size: 14px;
+        }
+
+        .history-match {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 800;
+            font-size: 13px;
+            color: var(--text);
+        }
+
+        /* Badge for match percent */
+        .match-badge {
+            padding: 6px 10px;
+            border-radius: 999px;
+            background: var(--progress-bg);
+            border: 1px solid var(--card-border);
+            font-weight: 800;
+            font-size: 12px;
+            min-width: 62px;
+            text-align: center;
+        }
+
+        /* Show green/red color scale dynamically via inline styles or classes */
+        .match-good {
+            color: #0b9444;
+        }
+
+        .match-medium {
+            color: #b57f00;
+        }
+
+        .match-low {
+            color: #c0392b;
+        }
+
+        /* Body details: matched & missing lists */
+        .history-details {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            font-size: 13px;
+            color: var(--subtext);
+        }
+
+        .detail-pill {
+            padding: 6px 8px;
+            border-radius: 8px;
+            background: rgba(0, 0, 0, 0.03);
+            border: 1px solid var(--card-border);
+            font-weight: 600;
+            font-size: 12px;
+        }
+
+        /* Right column: actions (download, highlight) */
+        .history-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            align-items: flex-end;
+            min-width: 120px;
+        }
+
+        .action-btn {
+            padding: 8px 10px;
+            border-radius: 8px;
+            border: 1px solid var(--card-border);
+            background: transparent;
+            cursor: pointer;
+            font-weight: 700;
+        }
+
+        /* Primary action style */
+        .action-primary {
+            background: var(--button-bg);
+            color: #fff;
+            border-color: transparent;
+        }
+
+        .action-primary:hover {
+            background: var(--button-hover);
+        }
+
+        /* Highlighted key history (glow + left border) */
+        .history-item.highlight {
+            border-left: 6px solid rgba(0, 106, 255, 0.18);
+            box-shadow: 0 10px 30px rgba(0, 106, 255, 0.06);
+            transform: translateY(-2px);
+        }
+
+        /* ⭐ Animated favorite pulse */
+        .starred::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            border-radius: 10px;
+            pointer-events: none;
+            box-shadow: 0 0 24px rgba(181, 127, 0, 0.08);
+            animation: favPulse 2.2s infinite;
+            opacity: 0.7;
+        }
+
+        @keyframes favPulse {
+            0% {
+                transform: scale(0.98);
+                opacity: 0.6;
+            }
+
+            60% {
+                transform: scale(1.02);
+                opacity: 0.25;
+            }
+
+            100% {
+                transform: scale(0.98);
+                opacity: 0.6;
+            }
+        }
+
+        /* ---------- Pagination area ---------- */
+        .history-pager {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            align-items: center;
+            margin-top: 12px;
+        }
+
+        .pager-btn {
+            padding: 8px 10px;
+            border-radius: 8px;
+            border: 1px solid var(--card-border);
+            background: transparent;
+            cursor: pointer;
+            font-weight: 700;
+        }
+
+        .pager-btn.active {
+            background: var(--button-bg);
+            color: white;
+            border-color: transparent;
+        }
+
+        /* ---------- Download area ---------- */
+        .history-tools {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+
+        /* ---------- Responsive tweaks ---------- */
+        @media (max-width: 880px) {
+            .history-item {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .history-meta {
+                width: auto;
+                min-width: 0;
+                flex-direction: row;
+                justify-content: space-between;
+            }
+
+            .history-actions {
+                align-items: stretch;
+                flex-direction: row;
+                width: 100%;
+            }
+        }
+
+        /* ---------- Dark mode tweaks (optional: if variables differ) ---------- */
+        .dark-mode .history-item {
+            border-color: #3a3d42;
+            background: var(--card-bg);
+        }
+
+        .dark-mode .detail-pill {
+            background: rgba(255, 255, 255, 0.02);
+        }
     </style>
 </head>
 
-<body> 
+<body>
 
     <!-- HEADER -->
     <div class="header">
@@ -798,8 +1073,18 @@
                 <div class="card">
                     <h3>3. Skill Gap History</h3>
                     <button class="primary-btn full-width" onclick="loadHistory()">View History</button>
-                    <div id="historyOutput" style="margin-top:12px;"></div>
+
+                    <!-- Add this wrapper -->
+                    <div class="history-tools hidden" id="historyTools">
+                        <button class="action-btn" onclick="downloadHistory()">Download CSV</button>
+                    </div>
+
+                    <div id="historyOutput" class="history-list"></div>
+
+                    <!-- Add pagination wrapper -->
+                    <div id="historyPager" class="history-pager hidden"></div>
                 </div>
+
 
                 <!-- 4. Request Addition of Learned Skill (collapsible) -->
                 <div class="card">
@@ -1179,92 +1464,119 @@
     /*           HISTORY               */
     /* =============================== */
 
-async function loadHistory() {
-    const employeeId = document.getElementById("employeeId").value;
-    const roleId = document.getElementById("roleId").value;
-    const box = document.getElementById("historyOutput");
- 
-    if (!employeeId) {
-        box.innerHTML = `<p style="color:red;">Select an employee.</p>`;
-        return;
-    }
- 
-    box.innerHTML = `<div class="loader"></div>Loading...`;
- 
-    try {
-        const res = await fetch(`${API_BASE}/history`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ employeeId, roleId })
-        });
- 
-        let data = await res.json();
-        if (data.body) data = JSON.parse(data.body);
- 
-        if (!data.length) {
-            box.innerHTML = "No history found.";
+    async function loadHistory() {
+        const employeeId = document.getElementById("employeeId").value;
+        const roleId = document.getElementById("roleId").value;
+
+        const box = document.getElementById("historyOutput");
+        const tools = document.getElementById("historyTools");
+        const pager = document.getElementById("historyPager");
+
+        if (!employeeId) {
+            box.innerHTML = `<p style="color:red;">Select an employee.</p>`;
             return;
         }
- 
-        box.innerHTML = data.map((h, i) => `
-            <div class="entry">
-                <strong>${i === 0 ? "⭐ Latest" : ""}</strong><br>
-                Match: ${h.matchPercent}%<br>
-                Missing: ${h.missingSkills.join(", ")}<br>
-                <small>${h.timestamp}</small>
+
+        box.innerHTML = `<div class='loader'></div>Loading...`;
+        tools.classList.add("hidden");
+        pager.classList.add("hidden");
+
+        try {
+            const res = await fetch(`${API_BASE}/history`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ employeeId, roleId })
+            });
+
+            let data = await res.json();
+            if (data.body) data = JSON.parse(data.body);
+
+            if (!data.length) {
+                box.innerHTML = "No history found.";
+                return;
+            }
+
+            tools.classList.remove("hidden");
+            pager.classList.remove("hidden");
+
+            // Render list
+            box.innerHTML = data.map((h, idx) => `
+            <div class="history-item ${idx === 0 ? "highlight" : ""}">
+                
+                <div class="history-meta">
+                    <div class="history-timestamp">${h.timestamp.split("T")[0]}</div>
+                    <button class="star-btn" onclick="toggleFavorite(${idx})">
+                        <span class="star-icon">⭐</span>
+                    </button>
+                </div>
+
+                <div class="history-body">
+                    <div class="history-title">
+                        <div class="history-role">${h.roleId}</div>
+                        <div class="history-match">
+                            <span class="match-badge">${h.matchPercent}%</span>
+                        </div>
+                    </div>
+
+                    <div class="history-details">
+                        <div class="detail-pill">Matched: ${h.matchedSkills.join(", ") || "None"}</div>
+                        <div class="detail-pill">Missing: ${h.missingSkills.join(", ") || "None"}</div>
+                    </div>
+                </div>
+
+                <div class="history-actions">
+                    <button class="action-btn action-primary" onclick="downloadEntry(${idx})">Download</button>
+                </div>
+
             </div>
         `).join("");
 
-    } catch (err) {
-        box.innerHTML = `<p style="color:red;">Error loading history.</p>`;
-    }
-}
+            // Simple pager (static until enhanced)
+            pager.innerHTML = `
+            <button class="pager-btn active">1</button>
+        `;
 
-// ========== History Pagination & Favorites ========== //
-
-// API endpoints - replace with your API Gateway endpoints
-const API_getHistory = `${API_BASE}/get-skillgap-history`;
-const API_toggleFav = `${API_BASE}/toggle-favorite-history`;
-const API_exportCsv = `${API_BASE}/export-history-csv`;
- 
-// Keep track of lastKey for pagination
-let historyLastKey = null;
-let historyLimit = 5;
- 
-// load history page
-async function loadHistoryPage(limit = 5, lastKey = null) {
-    const emp = document.getElementById("employeeId").value;
-    if (!emp) {
-        document.getElementById("historyOutput").innerHTML = `<p style="color:red;">Select employee</p>`;
-        return;
+        } catch (err) {
+            box.innerHTML = `<p style="color:red;">Error loading history.</p>`;
+        }
     }
-    const payload = { employeeId: emp, limit };
-    if (lastKey) payload.lastEvaluatedKey = lastKey;
- 
-    const out = document.getElementById("historyOutput");
-    out.innerHTML = `<div class="loader"></div> Loading...`;
-    try {
-        const res = await fetch(API_getHistory, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload)
-        });
-        const data = await res.json();
-        const items = data.items || [];
-        historyLastKey = data.lastEvaluatedKey || null;
- 
-        if (!items.length) {
-            out.innerHTML = `<p>No history found.</p>`;
+
+    // load history page
+    async function loadHistoryPage(limit = 5, lastKey = null) {
+        const emp = document.getElementById("employeeId").value;
+        if (!emp) {
+            document.getElementById("historyOutput").innerHTML = `<p style="color:red;">Select employee</p>`;
             return;
         }
- 
-        out.innerHTML = `
+        const payload = { employeeId: emp, limit };
+        if (lastKey) payload.lastEvaluatedKey = lastKey;
+
+        const out = document.getElementById("historyOutput");
+        out.innerHTML = `<div class="loader"></div> Loading...`;
+        try {
+            const res = await fetch(API_getHistory, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            const items = data.items || [];
+            historyLastKey = data.lastEvaluatedKey || null;
+
+            if (!items.length) {
+                out.innerHTML = `<p>No history found.</p>`;
+                return;
+            }
+
+            out.innerHTML = `
             ${items.map(it => `
                 <div class="entry" id="hist_${it.historyId}">
                     <div style="display:flex; justify-content:space-between; align-items:center;">
                         <div>
                             <strong>${it.roleId || ''}</strong> • ${it.timestamp || ''} <br>
-                            <span>Match: ${it.matchPercent || 0}%</span>
+                            <span class="hist-percent">
+  ${(isNaN(Number(it.matchPercent)) ? 0 : Number(it.matchPercent))}% 
+</span>
                         </div>
                         <div style="text-align:right;">
                             <button onclick="toggleFavUI('${it.historyId}', ${!!it.favorite})" 
@@ -1285,80 +1597,80 @@ async function loadHistoryPage(limit = 5, lastKey = null) {
                 <button onclick="downloadHistoryCsv()" class="secondary-btn">Download CSV</button>
             </div>
         `;
-    } catch (err) {
-        console.error(err);
-        out.innerHTML = `<p style="color:red;">Error loading history.</p>`;
+        } catch (err) {
+            console.error(err);
+            out.innerHTML = `<p style="color:red;">Error loading history.</p>`;
+        }
     }
-}
- 
-function loadMoreHistory() {
-    if (!historyLastKey) return;
-    loadHistoryPage(historyLimit, historyLastKey);
-}
- 
-// toggle favorite via UI + API
-async function toggleFavUI(historyId, currentlyFav) {
-    try {
-        // optimistic UI update
-        const button = document.querySelector(`#hist_${historyId} button`);
-        if (button) button.innerText = currentlyFav ? '☆' : '⭐';
- 
-        const res = await fetch(API_toggleFav, {
+
+    function loadMoreHistory() {
+        if (!historyLastKey) return;
+        loadHistoryPage(historyLimit, historyLastKey);
+    }
+
+    // toggle favorite via UI + API
+    async function toggleFavUI(historyId, currentlyFav) {
+        try {
+            // optimistic UI update
+            const button = document.querySelector(`#hist_${historyId} button`);
+            if (button) button.innerText = currentlyFav ? '☆' : '⭐';
+
+            const res = await fetch(API_toggleFav, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ historyId, favorite: !currentlyFav })
+            });
+            const data = await res.json();
+            // reload the current page for consistency
+            loadHistoryPage(historyLimit);
+        } catch (err) {
+            console.error(err);
+            // revert UI on failure
+            loadHistoryPage(historyLimit);
+        }
+    }
+
+    // download CSV (will trigger browser download if API returns proper headers)
+    function downloadHistoryCsv() {
+        const emp = document.getElementById("employeeId").value;
+        if (!emp) { alert("Select employee"); return; }
+
+        // open a new window so Content-Disposition can prompt download
+        const form = document.createElement("form");
+        form.method = "POST";
+        form.action = API_exportCsv;
+        form.target = "_blank";
+
+        const input = document.createElement("input");
+        input.type = "hidden";
+        input.name = "body";
+        // API expects JSON body; we will send JSON as string in a single 'body' field
+        input.value = JSON.stringify({ employeeId: emp });
+        form.appendChild(input);
+        document.body.appendChild(form);
+        form.submit();
+        form.remove();
+    }
+
+    //========== Alternative download via fetch + Blob ==========
+    async function downloadHistoryCsv_fetch() {
+        const emp = document.getElementById("employeeId").value;
+        const res = await fetch(API_exportCsv, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ historyId, favorite: !currentlyFav })
+            body: JSON.stringify({ employeeId: emp })
         });
-        const data = await res.json();
-        // reload the current page for consistency
-        loadHistoryPage(historyLimit); 
-    } catch (err) {
-        console.error(err);
-        // revert UI on failure
-        loadHistoryPage(historyLimit);
+        const text = await res.text();
+        const blob = new Blob([text], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `skill-history-${emp}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
     }
-}
- 
-// download CSV (will trigger browser download if API returns proper headers)
-function downloadHistoryCsv() {
-    const emp = document.getElementById("employeeId").value;
-    if (!emp) { alert("Select employee"); return; }
- 
-    // open a new window so Content-Disposition can prompt download
-    const form = document.createElement("form");
-    form.method = "POST";
-    form.action = API_exportCsv;
-    form.target = "_blank";
- 
-    const input = document.createElement("input");
-    input.type = "hidden";
-    input.name = "body";
-    // API expects JSON body; we will send JSON as string in a single 'body' field
-    input.value = JSON.stringify({ employeeId: emp });
-    form.appendChild(input);
-    document.body.appendChild(form);
-    form.submit();
-    form.remove();
-}
 
-//========== Alternative download via fetch + Blob ==========
-async function downloadHistoryCsv_fetch() {
-    const emp = document.getElementById("employeeId").value;
-    const res = await fetch(API_exportCsv, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ employeeId: emp })
-    });
-    const text = await res.text();
-    const blob = new Blob([text], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `skill-history-${emp}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-}
- 
- 
+
     /* =============================== */
     /*      REQUEST LEARNED SKILL      */
     /* =============================== */
@@ -1558,8 +1870,8 @@ async function downloadHistoryCsv_fetch() {
                         name: emp.name,
                         roleId: emp.targetRoleId,
                         roleName: emp.currentRole || "Unknown",
-                        match: "N/A",
-                        missing: "N/A"
+                        match: data.matchPercent || "0" + "%",
+                        missing: data.missingSkills.length || "N/A"
                     });
                     continue;
                 }
@@ -1569,7 +1881,7 @@ async function downloadHistoryCsv_fetch() {
                     name: emp.name,
                     roleId: emp.targetRoleId,
                     roleName: data.roleName || emp.currentRole || "Unknown",
-                    match: data.matchPercent,
+                    match: data.matchPercent + "%",
                     missing: data.missingSkills.length
                 });
             }
@@ -1591,7 +1903,7 @@ async function downloadHistoryCsv_fetch() {
                         <th>Employee</th>
                         <th>Role ID</th>
                         <th>Role Name</th>
-                        <th>Match %</th>
+                        <th>Match</th>
                         <th>Missing</th>
                     </tr>
                 </thead>
@@ -1787,6 +2099,14 @@ async function downloadHistoryCsv_fetch() {
     function toggleSection(button) {
         button.classList.toggle("collapse-active");
     }
+    /* ==== match percent safety ==== */
+    function safePercent(val) {
+        if (val === undefined || val === null) return 0;
+        if (val === "undefined" || val === "null") return 0;
+        if (isNaN(val)) return 0;
+        return Number(val);
+    }
+
 </script>
 
 </html>
