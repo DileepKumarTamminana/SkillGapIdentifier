@@ -1,70 +1,23 @@
 import json
 import boto3
-from decimal import Decimal
-from boto3.dynamodb.conditions import Key
 
 dynamodb = boto3.resource("dynamodb")
-history_table = dynamodb.Table("SkillGapHistory")
-
-
-def convert_decimal(obj):
-    """Recursively convert DynamoDB Decimal to float/int."""
-    if isinstance(obj, list):
-        return [convert_decimal(i) for i in obj]
-    if isinstance(obj, dict):
-        return {k: convert_decimal(v) for k, v in obj.items()}
-    if isinstance(obj, Decimal):
-        return float(obj)
-    return obj
-
+table = dynamodb.Table("SkillGapHistory")
 
 def lambda_handler(event, context):
-    try:
-        body = event.get("body")
-        if isinstance(body, str):
-            body = json.loads(body)
+    body = json.loads(event["body"])
 
-        employee_id = body.get("employeeId")
-        if not employee_id:
-            return resp(400, {"message": "employeeId required"})
+    history_id = body.get("historyId")
+    favorite = body.get("favorite")
 
-        # Fetch ALL logs for employee
-        result = history_table.query(
-            IndexName="skillGapIndex",
-            KeyConditionExpression=Key("employeeId").eq(employee_id)
-        )
+    table.update_item(
+        Key={"historyId": history_id},
+        UpdateExpression="SET favourite = :v",
+        ExpressionAttributeValues={":v": favorite}
+    )
 
-        items = result.get("Items", [])
-        if not items:
-            return resp(200, {"currentLog": None, "favoriteLogs": []})
-
-        # Sort by timestamp desc
-        items = sorted(items, key=lambda x: x.get("timestamp", ""), reverse=True)
-
-        # Latest log (current)
-        current_log = items[0]
-
-        # Top 5 favourite logs
-        fav_logs = [i for i in items if i.get("favourite") is True]
-        fav_logs = sorted(fav_logs, key=lambda x: x.get("timestamp", ""), reverse=True)
-        fav_logs = fav_logs[:5]
-
-        return resp(200, {
-            "currentLog": convert_decimal(current_log),
-            "favoriteLogs": convert_decimal(fav_logs)
-        })
-
-    except Exception as e:
-        return resp(500, {"error": str(e)})
-
-
-def resp(status, body):
     return {
-        "statusCode": status,
-        "headers": {
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Headers": "*",
-            "Access-Control-Allow-Methods": "*"
-        },
-        "body": json.dumps(body)
+        "statusCode": 200,
+        "body": json.dumps({"message": "Updated", "favourite": favorite})
     }
+
