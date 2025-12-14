@@ -1,13 +1,17 @@
 import boto3
-from decimal import Decimal
+import json
 
 dynamodb = boto3.resource("dynamodb")
 table = dynamodb.Table("SkillGapHistory")
 
 def lambda_handler(event, context):
-    response = table.scan()
-    for item in response["Items"]:
-        if "matchPercent" not in item or item["matchPercent"] is None:
-            item["matchPercent"] = Decimal("0")
-            table.put_item(Item=item)
-    return "Fixed"
+    resp = table.query(
+        IndexName="skillgapIndex",
+        KeyConditionExpression=boto3.dynamodb.conditions.Key("employeeId").eq("E001")
+    )
+
+    # return EVERYTHING we see for E001's history
+    return {
+        "statusCode": 200,
+        "body": json.dumps(resp["Items"], indent=2, default=str)
+    }
