@@ -1,221 +1,164 @@
-{
-  "Courses": [
-    {
-      "PutRequest": {
-        "Item": {
-          "skill": { "S": "Java" },
-          "courseName": { "S": "Java Programming Masterclass for Software Developers" },
-          "courseLink": { "S": "https://www.udemy.com/course/java-the-complete-java-developer-course/" }
-        }
-      }
-    },
-    {
-      "PutRequest": {
-        "Item": {
-          "skill": { "S": "Spring" },
-          "courseName": { "S": "Spring Framework - Beginner to Guru" },
-          "courseLink": { "S": "https://www.udemy.com/course/spring-framework-5-beginner-to-guru/" }
-        }
-      }
-    },
-    {
-      "PutRequest": {
-        "Item": {
-          "skill": { "S": "Spring Boot" },
-          "courseName": { "S": "Spring Boot Microservices with Spring Cloud" },
-          "courseLink": { "S": "https://www.udemy.com/course/microservices-with-spring-boot-and-spring-cloud/" }
-        }
-      }
-    },
+import json
+import boto3
+import uuid
+from datetime import datetime
+from decimal import Decimal
+from boto3.dynamodb.conditions import Key
 
-    {
-      "PutRequest": {
-        "Item": {
-          "skill": { "S": "Git" },
-          "courseName": { "S": "Git & GitHub Masterclass" },
-          "courseLink": { "S": "https://www.udemy.com/course/git-and-github-bootcamp/" }
-        }
-      }
-    },
+dynamodb = boto3.resource("dynamodb")
 
-    {
-      "PutRequest": {
-        "Item": {
-          "skill": { "S": "REST API" },
-          "courseName": { "S": "REST API Development with Java & Spring Boot" },
-          "courseLink": { "S": "https://www.udemy.com/course/restful-web-services-with-spring-boot/" }
-        }
-      }
-    },
+employees_table = dynamodb.Table("Employees")
+roles_table = dynamodb.Table("Roles")
+courses_table = dynamodb.Table("Courses")
+history_table = dynamodb.Table("SkillGapHistory")
 
-    {
-      "PutRequest": {
-        "Item": {
-          "skill": { "S": "SQL" },
-          "courseName": { "S": "SQL Bootcamp — Zero to Hero" },
-          "courseLink": { "S": "https://www.udemy.com/course/the-complete-sql-bootcamp/" }
-        }
-      }
-    },
 
-    {
-      "PutRequest": {
-        "Item": {
-          "skill": { "S": "AWS EC2" },
-          "courseName": { "S": "AWS EC2 Masterclass" },
-          "courseLink": { "S": "https://www.udemy.com/course/aws-certified-solutions-architect-associate-saa-c03/" }
-        }
-      }
-    },
+# ----------------------------------------
+#  Normalize Dynamodb lists → Python list
+# ----------------------------------------
+def extract_skills(raw_list):
+    if not raw_list:
+        return []
+    skills = []
+    for item in raw_list:
+        if isinstance(item, dict) and "S" in item:
+            skills.append(item["S"])
+        elif isinstance(item, str):
+            skills.append(item)
+    return skills
 
-    {
-      "PutRequest": {
-        "Item": {
-          "skill": { "S": "AWS Lambda" },
-          "courseName": { "S": "AWS Lambda & Serverless API Development" },
-          "courseLink": { "S": "https://www.udemy.com/course/aws-lambda-serverless/" }
-        }
-      }
-    },
 
-    {
-      "PutRequest": {
-        "Item": {
-          "skill": { "S": "AWS S3" },
-          "courseName": { "S": "AWS S3 Deep Dive" },
-          "courseLink": { "S": "https://www.udemy.com/course/aws-certified-solutions-architect/" }
-        }
-      }
-    },
+# ----------------------------------------
+#  MAIN HANDLER
+# ----------------------------------------
+def lambda_handler(event, context):
+    try:
+        # Parse Body
+        body = event.get("body")
+        if isinstance(body, str):
+            body = json.loads(body)
 
-    {
-      "PutRequest": {
-        "Item": {
-          "skill": { "S": "CI/CD" },
-          "courseName": { "S": "CI/CD Pipelines with Jenkins, GitHub Actions & AWS" },
-          "courseLink": { "S": "https://www.udemy.com/course/ci-cd-pipeline/" }
-        }
-      }
-    },
+        employee_id = body.get("employeeId")
+        role_id = body.get("roleId")
 
-    {
-      "PutRequest": {
-        "Item": {
-          "skill": { "S": "CodePipeline" },
-          "courseName": { "S": "AWS CodePipeline Masterclass" },
-          "courseLink": { "S": "https://www.udemy.com/course/aws-codepipeline/" }
-        }
-      }
-    },
+        if not employee_id or not role_id:
+            return response(400, {"message": "employeeId and roleId are required"})
 
-    {
-      "PutRequest": {
-        "Item": {
-          "skill": { "S": "CodeBuild" },
-          "courseName": { "S": "AWS CodeBuild Essentials" },
-          "courseLink": { "S": "https://www.udemy.com/course/aws-codebuild/" }
-        }
-      }
-    },
+        # ----------------------------------------
+        # Fetch employee & role
+        # ----------------------------------------
+        emp = employees_table.get_item(Key={"employeeId": employee_id}).get("Item")
+        role = roles_table.get_item(Key={"roleId": role_id}).get("Item")
 
-    {
-      "PutRequest": {
-        "Item": {
-          "skill": { "S": "CloudFormation" },
-          "courseName": { "S": "AWS CloudFormation Masterclass" },
-          "courseLink": { "S": "https://www.udemy.com/course/aws-cloudformation-master-class/" }
-        }
-      }
-    },
+        if not emp:
+            return response(404, {"message": f"Employee {employee_id} not found"})
+        if not role:
+            return response(404, {"message": f"Role {role_id} not found"})
 
-    {
-      "PutRequest": {
-        "Item": {
-          "skill": { "S": "Docker" },
-          "courseName": { "S": "Docker & Kubernetes for Developers" },
-          "courseLink": { "S": "https://www.udemy.com/course/docker-kubernetes-the-complete-guide/" }
-        }
-      }
-    },
+        # ----------------------------------------
+        # Skill extraction
+        # ----------------------------------------
+        employee_skills = set(extract_skills(emp.get("skills", [])))
+        required_skills = set(extract_skills(role.get("requiredSkills", [])))
 
-    {
-      "PutRequest": {
-        "Item": {
-          "skill": { "S": "IAM" },
-          "courseName": { "S": "AWS IAM Masterclass" },
-          "courseLink": { "S": "https://www.udemy.com/course/aws-iam/" }
-        }
-      }
-    },
+        total = len(required_skills) or 1
 
-    {
-      "PutRequest": {
-        "Item": {
-          "skill": { "S": "Node.js" },
-          "courseName": { "S": "Node.js Developer Bootcamp" },
-          "courseLink": { "S": "https://www.udemy.com/course/the-complete-nodejs-developer-course-2/" }
-        }
-      }
-    },
+        matched = sorted(list(employee_skills & required_skills))
+        missing = sorted(list(required_skills - employee_skills))
 
-    {
-      "PutRequest": {
-        "Item": {
-          "skill": { "S": "Python" },
-          "courseName": { "S": "Python for Everybody" },
-          "courseLink": { "S": "https://www.udemy.com/course/python-the-complete-python-developer-course/" }
-        }
-      }
-    },
+        match_percent = round((len(matched) / total) * 100, 2)
+        match_percent_decimal = Decimal(str(match_percent))
 
-    {
-      "PutRequest": {
-        "Item": {
-          "skill": { "S": "Terraform" },
-          "courseName": { "S": "Terraform — Beginner to Advanced" },
-          "courseLink": { "S": "https://www.udemy.com/course/terraform-beginner-to-advanced/" }
-        }
-      }
-    },
+        # ----------------------------------------
+        # Recommendations lookup
+        # ----------------------------------------
+        recommendations = []
+        for skill in missing:
+            course_item = courses_table.get_item(Key={"skill": skill}).get("Item")
+            if course_item:
+                recommendations.append({
+                    "skill": skill,
+                    "courseName": course_item.get("courseName"),
+                    "courseLink": course_item.get("courseLink")
+                })
 
-    {
-      "PutRequest": {
-        "Item": {
-          "skill": { "S": "VPC" },
-          "courseName": { "S": "AWS VPC Masterclass" },
-          "courseLink": { "S": "https://www.udemy.com/course/aws-virtual-private-cloud-vpc/" }
+        # ----------------------------------------
+        #  Create HISTORY entry
+        # ----------------------------------------
+        history_entry = {
+            "historyId": str(uuid.uuid4()),
+            "employeeId": employee_id,
+            "roleId": role_id,
+            "matchedSkills": matched,
+            "missingSkills": missing,
+            "matchPercent": match_percent_decimal,
+            "favourite": False,
+            "timestamp": datetime.utcnow().isoformat() + "Z"
         }
-      }
-    },
 
-    {
-      "PutRequest": {
-        "Item": {
-          "skill": { "S": "HTML5" },
-          "courseName": { "S": "HTML5 & CSS3 Complete Course" },
-          "courseLink": { "S": "https://www.udemy.com/course/html-css-js/" }
-        }
-      }
-    },
+        history_table.put_item(Item=history_entry)
 
-    {
-      "PutRequest": {
-        "Item": {
-          "skill": { "S": "JavaScript" },
-          "courseName": { "S": "JavaScript: The Complete Guide" },
-          "courseLink": { "S": "https://www.udemy.com/course/javascript-the-complete-guide-2020-beginner-advanced/" }
-        }
-      }
-    },
+        # ----------------------------------------
+        #  LIMIT HISTORY TO LATEST 5 ENTRIES
+        # ----------------------------------------
+        # Fetch all logs for employee
+        try:
+            existing = history_table.query(
+                IndexName="skillGapIndex",
+                KeyConditionExpression=Key("employeeId").eq(employee_id)
+            ).get("Items", [])
+        except Exception as err:
+            print("GSI Query failed:", err)
+            existing = []
 
-    {
-      "PutRequest": {
-        "Item": {
-          "skill": { "S": "GitHub Copilot" },
-          "courseName": { "S": "GitHub Copilot Complete Guide" },
-          "courseLink": { "S": "https://www.udemy.com/course/github-copilot-complete-guide/" }
-        }
-      }
+        # Sort by timestamp DESC (newest → oldest)
+        existing_sorted = sorted(existing, key=lambda x: x["timestamp"], reverse=True)
+
+        # If more than 5, delete excess logs
+        if len(existing_sorted) > 5:
+            logs_to_delete = existing_sorted[5:]  # keep first 5
+            for log in logs_to_delete:
+                try:
+                    history_table.delete_item(Key={"historyId": log["historyId"]})
+                except Exception as del_err:
+                    print("Error deleting old history:", del_err)
+
+        # ----------------------------------------
+        # FINAL RESPONSE
+        # ----------------------------------------
+        return response(200, {
+            "employeeId": employee_id,
+            "employeeName": emp.get("name"),
+            "roleId": role_id,
+            "roleName": role.get("roleName") or emp.get("currentRole"),
+
+            "employeeSkills": sorted(list(employee_skills)),
+            "requiredSkills": sorted(list(required_skills)),
+            "matchedSkills": matched,
+            "missingSkills": missing,
+
+            "matchPercent": float(match_percent),
+            "recommendedCourses": recommendations
+        })
+
+    except Exception as e:
+        print("ERROR in SkillGapIdentifier:", str(e))
+        return response(500, {
+            "message": "Internal Server Error",
+            "error": str(e)
+        })
+
+
+# ----------------------------------------
+#  Standard JSON Response Wrapper
+# ----------------------------------------
+def response(code, body):
+    return {
+        "statusCode": code,
+        "headers": {
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Headers": "*",
+            "Access-Control-Allow-Methods": "*"
+        },
+        "body": json.dumps(body)
     }
-  ]
-}
