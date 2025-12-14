@@ -1,64 +1,206 @@
-import json
-import boto3
-from boto3.dynamodb.conditions import Key
-from decimal import Decimal
+{
+  "Courses": [
+    {
+      "PutRequest": {
+        "Item": {
+          "skill": { "S": "Java" },
+          "courseName": { "S": "Java Programming Masterclass for Software Developers" },
+          "courseLink": { "S": "https://www.udemy.com/course/java-the-complete-java-developer-course/" }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "skill": { "S": "Spring" },
+          "courseName": { "S": "Spring Framework - Beginner to Guru" },
+          "courseLink": { "S": "https://www.udemy.com/course/spring-framework-5-beginner-to-guru/" }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "skill": { "S": "Spring Boot" },
+          "courseName": { "S": "Spring Boot Microservices with Spring Cloud" },
+          "courseLink": { "S": "https://www.udemy.com/course/microservices-with-spring-boot-and-spring-cloud/" }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "skill": { "S": "Git" },
+          "courseName": { "S": "Git & GitHub Masterclass" },
+          "courseLink": { "S": "https://www.udemy.com/course/git-and-github-bootcamp/" }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "skill": { "S": "REST API" },
+          "courseName": { "S": "REST API Development with Java & Spring Boot" },
+          "courseLink": { "S": "https://www.udemy.com/course/restful-web-services-with-spring-boot/" }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "skill": { "S": "SQL" },
+          "courseName": { "S": "SQL Bootcamp — Go from Zero to Hero" },
+          "courseLink": { "S": "https://www.udemy.com/course/the-complete-sql-bootcamp/" }
+        }
+      }
+    },
 
-dynamodb = boto3.resource("dynamodb")
-history_table = dynamodb.Table("SkillGapHistory")
+    {
+      "PutRequest": {
+        "Item": {
+          "skill": { "S": "AWS EC2" },
+          "courseName": { "S": "AWS EC2 Masterclass" },
+          "courseLink": { "S": "https://www.udemy.com/course/aws-certified-solutions-architect-associate-saa-c03/" }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "skill": { "S": "AWS Lambda" },
+          "courseName": { "S": "AWS Lambda & Serverless API Development" },
+          "courseLink": { "S": "https://www.udemy.com/course/aws-lambda-serverless/" }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "skill": { "S": "AWS S3" },
+          "courseName": { "S": "AWS S3 Deep Dive" },
+          "courseLink": { "S": "https://www.udemy.com/course/aws-certified-solutions-architect/" }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "skill": { "S": "CI/CD" },
+          "courseName": { "S": "CI/CD Pipelines: Jenkins, GitHub Actions & AWS" },
+          "courseLink": { "S": "https://www.udemy.com/course/ci-cd-pipeline/" }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "skill": { "S": "CodePipeline" },
+          "courseName": { "S": "AWS CodePipeline & CodeBuild Masterclass" },
+          "courseLink": { "S": "https://www.udemy.com/course/aws-codepipeline/" }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "skill": { "S": "CodeBuild" },
+          "courseName": { "S": "AWS CodeBuild Essentials" },
+          "courseLink": { "S": "https://www.udemy.com/course/aws-codebuild/" }
+        }
+      }
+    },
 
+    {
+      "PutRequest": {
+        "Item": {
+          "skill": { "S": "CloudFormation" },
+          "courseName": { "S": "AWS CloudFormation for Beginners" },
+          "courseLink": { "S": "https://www.udemy.com/course/aws-cloudformation-master-class/" }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "skill": { "S": "Docker" },
+          "courseName": { "S": "Docker & Kubernetes for Developers" },
+          "courseLink": { "S": "https://www.udemy.com/course/docker-kubernetes-the-complete-guide/" }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "skill": { "S": "IAM" },
+          "courseName": { "S": "AWS IAM Masterclass" },
+          "courseLink": { "S": "https://www.udemy.com/course/aws-iam/" }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "skill": { "S": "Node.js" },
+          "courseName": { "S": "Node.js Complete Developer Bootcamp" },
+          "courseLink": { "S": "https://www.udemy.com/course/the-complete-nodejs-developer-course-2/" }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "skill": { "S": "Python" },
+          "courseName": { "S": "Python for Everybody" },
+          "courseLink": { "S": "https://www.udemy.com/course/python-the-complete-python-developer-course/" }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "skill": { "S": "Terraform" },
+          "courseName": { "S": "Terraform for Beginners with AWS" },
+          "courseLink": { "S": "https://www.udemy.com/course/terraform-beginner-to-advanced/" }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "skill": { "S": "VPC" },
+          "courseName": { "S": "AWS VPC Masterclass" },
+          "courseLink": { "S": "https://www.udemy.com/course/aws-virtual-private-cloud-vpc/" }
+        }
+      }
+    },
 
-def decimal_to_native(obj):
-    if isinstance(obj, list):
-        return [decimal_to_native(i) for i in obj]
-    if isinstance(obj, dict):
-        return {k: decimal_to_native(v) for k, v in obj.items()}
-    if isinstance(obj, Decimal):
-        return float(obj)
-    return obj
+    {
+      "PutRequest": {
+        "Item": {
+          "skill": { "S": "HTML5" },
+          "courseName": { "S": "HTML5 & CSS3 Complete Course" },
+          "courseLink": { "S": "https://www.udemy.com/course/html-css-js/" }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "skill": { "S": "JavaScript" },
+          "courseName": { "S": "JavaScript: The Complete Guide" },
+          "courseLink": { "S": "https://www.udemy.com/course/javascript-the-complete-guide-2020-beginner-advanced/" }
+        }
+      }
+    },
 
-
-def lambda_handler(event, context):
-    try:
-        # ✅ API Gateway v2 body parsing
-        body = event.get("body")
-        if body:
-            body = json.loads(body)
-        else:
-            body = {}
-
-        employee_id = body.get("employeeId")
-
-        if not employee_id:
-            return response(400, {"message": "employeeId required"})
-
-        # ✅ Query GSI
-        result = history_table.query(
-            IndexName="skillGapIndex",
-            KeyConditionExpression=Key("employeeId").eq(employee_id),
-            ScanIndexForward=False  # newest first
-        )
-
-        items = result.get("Items", [])
-
-        if not items:
-            return response(200, [])
-
-        items = decimal_to_native(items)
-
-        return response(200, items)
-
-    except Exception as e:
-        print("ERROR:", str(e))
-        return response(500, {"error": str(e)})
-
-
-def response(code, body):
-    return {
-        "statusCode": code,
-        "headers": {
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Headers": "*",
-            "Access-Control-Allow-Methods": "OPTIONS,POST"
-        },
-        "body": json.dumps(body)
+    {
+      "PutRequest": {
+        "Item": {
+          "skill": { "S": "GitHub Copilot" },
+          "courseName": { "S": "GitHub Copilot Complete Guide" },
+          "courseLink": { "S": "https://www.udemy.com/course/github-copilot-complete-guide/" }
+        }
+      }
     }
+  ]
+}
