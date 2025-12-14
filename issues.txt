@@ -12,30 +12,22 @@ courses_table = dynamodb.Table("Courses")
 history_table = dynamodb.Table("SkillGapHistory")
 
 
-# -----------------------------
-#  HELPER — Normalize skills
-# -----------------------------
 def extract_skills(raw_list):
-    """Handles DynamoDB strings, lists, and AttributeMaps."""
-    skills = []
+    """Normalize DynamoDB list values."""
     if not raw_list:
-        return skills
-
+        return []
+    skills = []
     for item in raw_list:
         if isinstance(item, dict) and "S" in item:
             skills.append(item["S"])
         elif isinstance(item, str):
             skills.append(item)
-
     return skills
 
 
-# -----------------------------
-#  MAIN HANDLER
-# -----------------------------
 def lambda_handler(event, context):
     try:
-        # Parse body
+        # Parse event body
         body = event.get("body")
         if isinstance(body, str):
             body = json.loads(body)
@@ -46,7 +38,7 @@ def lambda_handler(event, context):
         if not employee_id or not role_id:
             return response(400, {"message": "employeeId and roleId are required"})
 
-        # Load employee + role
+        # Fetch employee & role
         emp = employees_table.get_item(Key={"employeeId": employee_id}).get("Item")
         role = roles_table.get_item(Key={"roleId": role_id}).get("Item")
 
@@ -55,25 +47,19 @@ def lambda_handler(event, context):
         if not role:
             return response(404, {"message": f"Role {role_id} not found"})
 
-        # -----------------------------
-        #  SKILL EXTRACTION
-        # -----------------------------
+        # Skills extraction
         employee_skills = set(extract_skills(emp.get("skills", [])))
         required_skills = set(extract_skills(role.get("requiredSkills", [])))
 
         total = len(required_skills) or 1
-        
-        matched = sorted(list(employee_skills.intersection(required_skills)))
-        missing = sorted(list(required_skills.difference(employee_skills)))
+
+        matched = sorted(list(employee_skills & required_skills))
+        missing = sorted(list(required_skills - employee_skills))
 
         match_percent = round((len(matched) / total) * 100, 2)
-
-        # Decimal-safe conversion
         match_percent_decimal = Decimal(str(match_percent))
 
-        # -----------------------------
-        #  COURSE RECOMMENDATIONS
-        # -----------------------------
+        # Recommendations
         recommendations = []
         for skill in missing:
             course_item = courses_table.get_item(Key={"skill": skill}).get("Item")
@@ -84,30 +70,26 @@ def lambda_handler(event, context):
                     "courseLink": course_item.get("courseLink")
                 })
 
-        # -----------------------------
-        #  WRITE SAFE HISTORY ENTRY
-        # -----------------------------
+        # History entry
         history_entry = {
             "historyId": str(uuid.uuid4()),
             "employeeId": employee_id,
             "roleId": role_id,
-            "matchedSkills": matched or [],     # safe default
-            "missingSkills": missing or [],     # safe default
-            "matchPercent": match_percent_decimal,  # safe decimal
-            "favourite": False,                 # always present
+            "matchedSkills": matched,
+            "missingSkills": missing,
+            "matchPercent": match_percent_decimal,
+            "favourite": False,
             "timestamp": datetime.utcnow().isoformat() + "Z"
         }
 
         history_table.put_item(Item=history_entry)
 
-        # -----------------------------
-        #  FINAL RESPONSE TO UI
-        # -----------------------------
+        # Final return
         return response(200, {
             "employeeId": employee_id,
             "employeeName": emp.get("name"),
             "roleId": role_id,
-            "roleName": emp.get("currentRole") or role.get("roleName"),
+            "roleName": role.get("roleName") or emp.get("currentRole"),
 
             "employeeSkills": sorted(list(employee_skills)),
             "requiredSkills": sorted(list(required_skills)),
@@ -115,23 +97,15 @@ def lambda_handler(event, context):
             "matchedSkills": matched,
             "missingSkills": missing,
 
-            # UI-safe numeric value
             "matchPercent": float(match_percent),
-
             "recommendedCourses": recommendations
         })
 
     except Exception as e:
         print("ERROR in SkillGapIdentifier:", str(e))
-        return response(500, {
-            "message": "Internal Server Error",
-            "error": str(e)
-        })
+        return response(500, {"message": "Internal Server Error", "error": str(e)})
 
 
-# -----------------------------
-#  RESPONSE WRAPPER
-# -----------------------------
 def response(code, body):
     return {
         "statusCode": code,
