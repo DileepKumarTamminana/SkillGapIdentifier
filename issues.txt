@@ -6,18 +6,11 @@ table = dynamodb.Table("SkillGapHistory")
 
 def lambda_handler(event, context):
     body = json.loads(event["body"])
-
     history_id = body.get("historyId")
-    favorite = body.get("favorite")
 
-    table.update_item(
-        Key={"historyId": history_id},
-        UpdateExpression="SET favourite = :v",
-        ExpressionAttributeValues={":v": favorite}
-    )
+    table.delete_item(Key={"historyId": history_id})
 
     return {
         "statusCode": 200,
-        "body": json.dumps({"message": "Updated", "favourite": favorite})
+        "body": json.dumps({"message": "Log deleted"})
     }
-
