@@ -1,114 +1,66 @@
 import json
 import boto3
-import uuid
-from datetime import datetime
 from decimal import Decimal
+from boto3.dynamodb.conditions import Key
 
 dynamodb = boto3.resource("dynamodb")
-
-employees_table = dynamodb.Table("Employees")
-roles_table = dynamodb.Table("Roles")
-courses_table = dynamodb.Table("Courses")
 history_table = dynamodb.Table("SkillGapHistory")
 
 
-def extract_skills(raw_list):
-    """Normalize DynamoDB list values."""
-    if not raw_list:
-        return []
-    skills = []
-    for item in raw_list:
-        if isinstance(item, dict) and "S" in item:
-            skills.append(item["S"])
-        elif isinstance(item, str):
-            skills.append(item)
-    return skills
+def convert_decimal(obj):
+    """Recursively convert DynamoDB Decimal to float/int."""
+    if isinstance(obj, list):
+        return [convert_decimal(i) for i in obj]
+    if isinstance(obj, dict):
+        return {k: convert_decimal(v) for k, v in obj.items()}
+    if isinstance(obj, Decimal):
+        return float(obj)
+    return obj
 
 
 def lambda_handler(event, context):
     try:
-        # Parse event body
         body = event.get("body")
         if isinstance(body, str):
             body = json.loads(body)
 
         employee_id = body.get("employeeId")
-        role_id = body.get("roleId")
+        if not employee_id:
+            return resp(400, {"message": "employeeId required"})
 
-        if not employee_id or not role_id:
-            return response(400, {"message": "employeeId and roleId are required"})
+        # Fetch ALL logs for employee
+        result = history_table.query(
+            IndexName="skillGapIndex",
+            KeyConditionExpression=Key("employeeId").eq(employee_id)
+        )
 
-        # Fetch employee & role
-        emp = employees_table.get_item(Key={"employeeId": employee_id}).get("Item")
-        role = roles_table.get_item(Key={"roleId": role_id}).get("Item")
+        items = result.get("Items", [])
+        if not items:
+            return resp(200, {"currentLog": None, "favoriteLogs": []})
 
-        if not emp:
-            return response(404, {"message": f"Employee {employee_id} not found"})
-        if not role:
-            return response(404, {"message": f"Role {role_id} not found"})
+        # Sort by timestamp desc
+        items = sorted(items, key=lambda x: x.get("timestamp", ""), reverse=True)
 
-        # Skills extraction
-        employee_skills = set(extract_skills(emp.get("skills", [])))
-        required_skills = set(extract_skills(role.get("requiredSkills", [])))
+        # Latest log (current)
+        current_log = items[0]
 
-        total = len(required_skills) or 1
+        # Top 5 favourite logs
+        fav_logs = [i for i in items if i.get("favourite") is True]
+        fav_logs = sorted(fav_logs, key=lambda x: x.get("timestamp", ""), reverse=True)
+        fav_logs = fav_logs[:5]
 
-        matched = sorted(list(employee_skills & required_skills))
-        missing = sorted(list(required_skills - employee_skills))
-
-        match_percent = round((len(matched) / total) * 100, 2)
-        match_percent_decimal = Decimal(str(match_percent))
-
-        # Recommendations
-        recommendations = []
-        for skill in missing:
-            course_item = courses_table.get_item(Key={"skill": skill}).get("Item")
-            if course_item:
-                recommendations.append({
-                    "skill": skill,
-                    "courseName": course_item.get("courseName"),
-                    "courseLink": course_item.get("courseLink")
-                })
-
-        # History entry
-        history_entry = {
-            "historyId": str(uuid.uuid4()),
-            "employeeId": employee_id,
-            "roleId": role_id,
-            "matchedSkills": matched,
-            "missingSkills": missing,
-            "matchPercent": match_percent_decimal,
-            "favourite": False,
-            "timestamp": datetime.utcnow().isoformat() + "Z"
-        }
-
-        history_table.put_item(Item=history_entry)
-
-        # Final return
-        return response(200, {
-            "employeeId": employee_id,
-            "employeeName": emp.get("name"),
-            "roleId": role_id,
-            "roleName": role.get("roleName") or emp.get("currentRole"),
-
-            "employeeSkills": sorted(list(employee_skills)),
-            "requiredSkills": sorted(list(required_skills)),
-
-            "matchedSkills": matched,
-            "missingSkills": missing,
-
-            "matchPercent": float(match_percent),
-            "recommendedCourses": recommendations
+        return resp(200, {
+            "currentLog": convert_decimal(current_log),
+            "favoriteLogs": convert_decimal(fav_logs)
         })
 
     except Exception as e:
-        print("ERROR in SkillGapIdentifier:", str(e))
-        return response(500, {"message": "Internal Server Error", "error": str(e)})
+        return resp(500, {"error": str(e)})
 
 
-def response(code, body):
+def resp(status, body):
     return {
-        "statusCode": code,
+        "statusCode": status,
         "headers": {
             "Access-Control-Allow-Origin": "*",
             "Access-Control-Allow-Headers": "*",
