@@ -1,90 +1,76 @@
-import json
-import boto3
-from decimal import Decimal
-from boto3.dynamodb.conditions import Key
+async function loadHistory() {
+        const employeeId = document.getElementById("employeeId").value;
+        const roleId = document.getElementById("roleId").value;
 
-dynamodb = boto3.resource("dynamodb")
-history_table = dynamodb.Table("SkillGapHistory")
+        const box = document.getElementById("historyOutput");
+        const tools = document.getElementById("historyTools");
+        const pager = document.getElementById("historyPager");
 
+        if (!employeeId) {
+            box.innerHTML = `<p style="color:red;">Select an employee.</p>`;
+            return;
+        }
 
-def convert_decimal(obj):
-    """Recursively convert DynamoDB Decimal to float/int."""
-    if isinstance(obj, list):
-        return [convert_decimal(i) for i in obj]
-    if isinstance(obj, dict):
-        new_obj = {}
-        for k, v in obj.items():
-            if isinstance(v, Decimal):
-                new_obj[k] = float(v)
-            else:
-                new_obj[k] = convert_decimal(v)
-        return new_obj
-    if isinstance(obj, Decimal):
-        return float(obj)
-    return obj
+        box.innerHTML = `<div class='loader'></div>Loading...`;
+        tools.classList.add("hidden");
+        pager.classList.add("hidden");
 
+        try {
+            const res = await fetch(`${API_BASE}/history`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ employeeId, roleId })
+            });
 
-def lambda_handler(event, context):
-    try:
-        # Parse event body
-        body = event.get("body")
-        if isinstance(body, str):
-            body = json.loads(body)
+            let data = await res.json();
+            if (data.body) data = JSON.parse(data.body);
 
-        employee_id = body.get("employeeId")
-        if not employee_id:
-            return resp(400, {"message": "employeeId required"})
+            if (!data.length) {
+                box.innerHTML = "No history found.";
+                return;
+            }
 
-        items = []
+            tools.classList.remove("hidden");
+            pager.classList.remove("hidden");
 
-        # 1️⃣ Query using GSI
-        try:
-            gsi_result = history_table.query(
-                IndexName="skillGapIndex",
-                KeyConditionExpression=Key("employeeId").eq(employee_id)
-            )
-            items = gsi_result.get("Items", [])
-        except Exception as e:
-            print("GSI ERROR:", str(e))
+            // Render list
+            box.innerHTML = data.map((h, idx) => `
+            <div class="history-item ${idx === 0 ? "highlight" : ""}">
+                
+                <div class="history-meta">
+                    <div class="history-timestamp">${h.timestamp.split("T")[0]}</div>
+                    <button class="star-btn" onclick="toggleFavorite(${idx})">
+                        <span class="star-icon">⭐</span>
+                    </button>
+                </div>
 
-        # 2️⃣ Fallback scan
-        if not items:
-            print("GSI empty, scanning full table...")
-            scan_result = history_table.scan()
-            scan_items = scan_result.get("Items", [])
-            items = [i for i in scan_items if i.get("employeeId") == employee_id]
+                <div class="history-body">
+                    <div class="history-title">
+                        <div class="history-role">${h.roleId}</div>
+                        <div class="history-match">
+                            <span class="match-badge">${h.matchPercent}%</span>
+                        </div>
+                    </div>
 
-        # If STILL empty → return empty array (UI handles it)
-        if not items:
-            return resp(200, [])
+                    <div class="history-details">
+                        <div class="detail-pill">Matched: ${h.matchedSkills.join(", ") || "None"}</div>
+                        <div class="detail-pill">Missing: ${h.missingSkills.join(", ") || "None"}</div>
+                    </div>
+                </div>
 
-        # 3️⃣ Fix missing fields & sort
-        for it in items:
-            it.setdefault("matchPercent", 0)
-            it.setdefault("favourite", False)
-            it.setdefault("timestamp", "1970-01-01T00:00:00Z")
+                <div class="history-actions">
+                    <button class="action-btn action-primary" onclick="downloadEntry(${idx})">Download</button>
+                </div>
 
-        # Sort by timestamp desc
-        items = sorted(items, key=lambda x: x["timestamp"], reverse=True)
+            </div>
+        `).join("");
 
-        # Convert decimals
-        items = convert_decimal(items)
+            // Simple pager (static until enhanced)
+            pager.innerHTML = `
+            <button class="pager-btn active">1</button>
+        `;
 
-        # 4️⃣ Return FLAT ARRAY (as UI expects)
-        return resp(200, items)
-
-    except Exception as e:
-        print("ERROR:", str(e))
-        return resp(500, {"error": str(e)})
-
-
-def resp(status, body):
-    return {
-        "statusCode": status,
-        "headers": {
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Headers": "*",
-            "Access-Control-Allow-Methods": "*"
-        },
-        "body": json.dumps(body)
+        } catch (err) {
+            box.innerHTML = `<p style="color:red;">Error loading history.</p>`;
+        }
     }
