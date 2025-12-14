@@ -1,17 +1,17 @@
 import json
 import boto3
-from decimal import Decimal
 from boto3.dynamodb.conditions import Key
+from decimal import Decimal
 
 dynamodb = boto3.resource("dynamodb")
 history_table = dynamodb.Table("SkillGapHistory")
 
 
-def convert_decimal(obj):
+def decimal_to_native(obj):
     if isinstance(obj, list):
-        return [convert_decimal(i) for i in obj]
+        return [decimal_to_native(i) for i in obj]
     if isinstance(obj, dict):
-        return {k: convert_decimal(v) for k, v in obj.items()}
+        return {k: decimal_to_native(v) for k, v in obj.items()}
     if isinstance(obj, Decimal):
         return float(obj)
     return obj
@@ -19,49 +19,46 @@ def convert_decimal(obj):
 
 def lambda_handler(event, context):
     try:
+        # ✅ API Gateway v2 body parsing
         body = event.get("body")
-        if isinstance(body, str):
+        if body:
             body = json.loads(body)
+        else:
+            body = {}
 
         employee_id = body.get("employeeId")
-        if not employee_id:
-            return resp(400, {"message": "employeeId required"})
 
-        # Query using GSI
+        if not employee_id:
+            return response(400, {"message": "employeeId required"})
+
+        # ✅ Query GSI
         result = history_table.query(
             IndexName="skillGapIndex",
-            KeyConditionExpression=Key("employeeId").eq(employee_id)
+            KeyConditionExpression=Key("employeeId").eq(employee_id),
+            ScanIndexForward=False  # newest first
         )
 
         items = result.get("Items", [])
 
         if not items:
-            return resp(200, [])
+            return response(200, [])
 
-        # Defaults + sort
-        for it in items:
-            it.setdefault("matchPercent", 0)
-            it.setdefault("matchedSkills", [])
-            it.setdefault("missingSkills", [])
-            it.setdefault("favourite", False)
-            it.setdefault("timestamp", "1970-01-01T00:00:00Z")
+        items = decimal_to_native(items)
 
-        items = sorted(items, key=lambda x: x["timestamp"], reverse=True)
-
-        return resp(200, convert_decimal(items))
+        return response(200, items)
 
     except Exception as e:
         print("ERROR:", str(e))
-        return resp(500, {"error": str(e)})
+        return response(500, {"error": str(e)})
 
 
-def resp(status, body):
+def response(code, body):
     return {
-        "statusCode": status,
+        "statusCode": code,
         "headers": {
             "Access-Control-Allow-Origin": "*",
             "Access-Control-Allow-Headers": "*",
-            "Access-Control-Allow-Methods": "*"
+            "Access-Control-Allow-Methods": "OPTIONS,POST"
         },
         "body": json.dumps(body)
     }
