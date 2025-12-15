@@ -52,7 +52,7 @@
             --button-bg: #007bff;
             --button-hover: #005fcc;
             --progress-bg: #2f3237;
-            --progress-text: #ffffff;
+            --progress-text: #000000;
             --progress-fill-gradient: linear-gradient(90deg, #29b6f6, #00e5ff);
         }
 
@@ -1076,7 +1076,7 @@
 
                     <!-- Add this wrapper -->
                     <div class="history-tools hidden" id="historyTools">
-                        <button class="action-btn" onclick="downloadHistory()">Download CSV</button>
+                        <button class="action-btn action-primary" onclick="downloadHistoryCsv()">Download CSV</button>
                     </div>
 
                     <div id="historyOutput" class="history-list"></div>
@@ -1209,11 +1209,20 @@
 
 </body>
 <script>
+    let historyCache = [];
+
+
     /* =============================== */
     /*           CONFIG                */
     /* =============================== */
 
     const API_BASE = "https://dx87uzkcm2.execute-api.us-east-1.amazonaws.com";
+
+    const API_exportCsv = `${API_BASE}/export-history-csv`;
+    const API_exportAnalysisCsv = `${API_BASE}/export-analysis-csv`;
+    const API_getHistory = `${API_BASE}/history`;
+    const API_toggleFav = `${API_BASE}/toggle-favorite`;
+
 
     let employeesList = [];
     let rolesList = [];
@@ -1488,19 +1497,35 @@
                 body: JSON.stringify({ employeeId, roleId })
             });
 
+            // let data = await res.json();
+            // if (data.body) data = JSON.parse(data.body);
+
+            // if (!data.length) {
+            //     box.innerHTML = "No history found.";
+            //     return;
+            // }
             let data = await res.json();
             if (data.body) data = JSON.parse(data.body);
 
-            if (!data.length) {
+            if (!Array.isArray(data) || !data.length) {
                 box.innerHTML = "No history found.";
                 return;
             }
+
+            historyCache = [...data]; // ✅ STORE HISTORY FOR DOWNLOAD
+
 
             tools.classList.remove("hidden");
             pager.classList.remove("hidden");
 
             // Render list
-            box.innerHTML = data.map((h, idx) => `
+            //box.innerHTML = data.map((h, idx) => `
+
+            const top5 = [...data]
+                .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+                .slice(0, 5);
+
+            box.innerHTML = top5.map((h, idx) => `
             <div class="history-item ${idx === 0 ? "highlight" : ""}">
                 
                 <div class="history-meta">
@@ -1594,7 +1619,7 @@
  
             <div style="margin-top:10px;">
                 <button ${!historyLastKey ? 'disabled' : ''} onclick="loadMoreHistory()" class="primary-btn">Load More</button>
-                <button onclick="downloadHistoryCsv()" class="secondary-btn">Download CSV</button>
+                <button onclick="downloadHistory()" class="secondary-btn">Download CSV</button>
             </div>
         `;
         } catch (err) {
@@ -2106,6 +2131,97 @@
         if (isNaN(val)) return 0;
         return Number(val);
     }
+    // =============================== */
+    /*        EXPORT CSV FILE          */
+    /* =============================== */
+
+    function exportCSV() {
+        if (!lastSkillGapResult) {
+            alert("Run Skill Gap Analysis first");
+            return;
+        }
+
+        const csvRows = [];
+        csvRows.push("Employee,Role,Match %,Matched Skills,Missing Skills");
+
+        csvRows.push([
+            lastSkillGapResult.employeeName,
+            lastSkillGapResult.roleName,
+            lastSkillGapResult.matchPercent,
+            `"${lastSkillGapResult.matchedSkills.join(", ")}"`,
+            `"${lastSkillGapResult.missingSkills.join(", ")}"`
+        ].join(","));
+
+        const blob = new Blob([csvRows.join("\n")], { type: "text/csv" });
+        const url = URL.createObjectURL(blob);
+
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "skill-gap-analysis.csv";
+        a.click();
+
+        URL.revokeObjectURL(url);
+    }
+    // =============================== */
+    /*        EXPORT PDF FILE          */
+    /* =============================== */
+    function exportPDF() {
+        const target = document.getElementById("skillGapOutput");
+
+        if (!target || !target.innerHTML.trim()) {
+            alert("Run Skill Gap Analysis first");
+            return;
+        }
+
+        html2pdf()
+            .from(target)
+            .set({
+                margin: 10,
+                filename: "skill-gap-analysis.pdf",
+                image: { type: "jpeg", quality: 0.98 },
+                html2canvas: { scale: 2 },
+                jsPDF: { unit: "mm", format: "a4", orientation: "portrait" }
+            })
+            .save();
+    }
+
+    // ======= EXPORT HISTORY TOP 5 =======//
+    function downloadHistory() {
+        if (!historyCache.length) {
+            alert("No history to download");
+            return;
+        }
+
+        const top5 = [...historyCache]
+            .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+            .slice(0, 5);
+
+        let csv = [];
+        csv.push("EmployeeId,RoleId,MatchPercent,MatchedSkills,MissingSkills,Timestamp");
+
+        top5.forEach(h => {
+            csv.push([
+                h.employeeId || "",
+                h.roleId || "",
+                h.matchPercent ?? 0,
+                `"${(h.matchedSkills || []).join(" | ")}"`,
+                `"${(h.missingSkills || []).join(" | ")}"`,
+                h.timestamp || ""
+            ].join(","));
+        });
+
+        const blob = new Blob([csv.join("\n")], { type: "text/csv" });
+        const url = URL.createObjectURL(blob);
+
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "skill-gap-history-top5.csv";
+        a.click();
+
+        URL.revokeObjectURL(url);
+    }
+
+
 
 </script>
 
