@@ -1,4 +1,0 @@
-const API_exportCsv = `${API_BASE}/export-history-csv`;
-const API_exportAnalysisCsv = `${API_BASE}/export-analysis-csv`;
-const API_getHistory = `${API_BASE}/history`;
-const API_toggleFav = `${API_BASE}/toggle-favorite`;
